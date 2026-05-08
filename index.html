@@ -207,7 +207,7 @@ input:checked + .toggle-slider:before { transform: translateX(18px); background:
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Foto Editor</span></h1>
+    <h1>ClashRooms <span>Foto Editor</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.1</span></h1>
   </div>
 
   <!-- Upload -->
@@ -269,6 +269,13 @@ input:checked + .toggle-slider:before { transform: translateX(18px); background:
         <span class="value-badge" id="brightness-label">0</span>
       </div>
       <input type="range" id="brightness-slider" min="-50" max="50" value="0" step="1">
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Scherpte</span>
+        <span class="value-badge" id="sharpness-label">+20</span>
+      </div>
+      <input type="range" id="sharpness-slider" min="0" max="100" value="20" step="1">
     </div>
   </div>
 
@@ -364,6 +371,7 @@ const vibranceSlider = document.getElementById('vibrance-slider');
 const saturationSlider = document.getElementById('saturation-slider');
 const contrastSlider = document.getElementById('contrast-slider');
 const brightnessSlider = document.getElementById('brightness-slider');
+const sharpnessSlider = document.getElementById('sharpness-slider');
 const glowSlider = document.getElementById('glow-slider');
 const toggleArcs = document.getElementById('toggle-arcs');
 const toggleGlow = document.getElementById('toggle-glow');
@@ -517,6 +525,7 @@ bindSlider(vibranceSlider, 'vibrance-label');
 bindSlider(saturationSlider, 'saturation-label');
 bindSlider(contrastSlider, 'contrast-label');
 bindSlider(brightnessSlider, 'brightness-label');
+bindSlider(sharpnessSlider, 'sharpness-label');
 glowSlider.addEventListener('input', () => {
   document.getElementById('glow-label').textContent = glowSlider.value + '%';
   render();
@@ -567,13 +576,38 @@ function applyColorAdjustments(imageData, vibrance, saturation, contrast, bright
   return imageData;
 }
 
+// ── Sharpening (unsharp mask convolution) ──
+function applySharpening(imageData, strength) {
+  if (strength === 0) return imageData;
+  const s = (strength / 100) * 1.5;
+  const W = imageData.width, H = imageData.height;
+  const src = new Uint8ClampedArray(imageData.data);
+  const dst = imageData.data;
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const i = (y * W + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        const n = src[((y-1)*W + x  )*4 + c];
+        const s2= src[((y+1)*W + x  )*4 + c];
+        const e = src[(  y  *W + x+1)*4 + c];
+        const w = src[(  y  *W + x-1)*4 + c];
+        dst[i+c] = Math.max(0, Math.min(255,
+          src[i+c] * (1 + 4*s) - s * (n + s2 + e + w)
+        ));
+      }
+    }
+  }
+  return imageData;
+}
+
 // ── Draw photo (with cover + color adjustments) ──
 function drawPhoto(oc, S) {
   // Photo fills the full S×S canvas (cover behavior)
   const needsAdjust = parseInt(vibranceSlider.value) !== 0 ||
                       parseInt(saturationSlider.value) !== 0 ||
                       parseInt(contrastSlider.value) !== 0 ||
-                      parseInt(brightnessSlider.value) !== 0;
+                      parseInt(brightnessSlider.value) !== 0 ||
+                      parseInt(sharpnessSlider.value) !== 0;
   if (needsAdjust) {
     const tmp = document.createElement('canvas');
     tmp.width = S; tmp.height = S;
@@ -584,7 +618,7 @@ function drawPhoto(oc, S) {
       photoImg.width * photoScale * (S / OUTPUT_SIZE),
       photoImg.height * photoScale * (S / OUTPUT_SIZE)
     );
-    const id = tc.getImageData(0, 0, S, S);
+    let id = tc.getImageData(0, 0, S, S);
     applyColorAdjustments(
       id,
       parseInt(vibranceSlider.value),
@@ -592,6 +626,7 @@ function drawPhoto(oc, S) {
       parseInt(contrastSlider.value),
       parseInt(brightnessSlider.value)
     );
+    applySharpening(id, parseInt(sharpnessSlider.value));
     tc.putImageData(id, 0, 0);
     oc.drawImage(tmp, 0, 0);
   } else {

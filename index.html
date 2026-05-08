@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClashRooms Groepsfoto Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Lexend Deca', sans-serif;
+  background: #f9fafb;
+  color: #111827;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width: 300px;
+  min-width: 300px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 20px 16px;
+  gap: 18px;
+  scrollbar-width: thin;
+  scrollbar-color: #e94560 #f9fafb;
+}
+#sidebar::-webkit-scrollbar { width: 4px; }
+#sidebar::-webkit-scrollbar-track { background: #f9fafb; }
+#sidebar::-webkit-scrollbar-thumb { background: #e94560; border-radius: 2px; }
+
+#sidebar h1 {
+  font-size: 1.05rem; font-weight: 900; color: #111827;
+  letter-spacing: -0.5px;
+}
+#sidebar h1 span { color: #e94560; }
+
+.section-title {
+  font-size: 0.62rem; font-weight: 700; color: #e94560;
+  text-transform: uppercase; letter-spacing: 1.2px;
+  margin-bottom: 10px;
+}
+
+.card {
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Upload area */
+#upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  padding: 22px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+#upload-area:hover, #upload-area.drag-over {
+  border-color: #e94560;
+  background: rgba(233,69,96,0.05);
+}
+#upload-area input { display: none; }
+#upload-area .upload-icon { font-size: 1.8rem; margin-bottom: 6px; }
+#upload-area p { font-size: 0.78rem; color: #6b7280; line-height: 1.5; }
+#upload-area p strong { color: #374151; }
+
+/* Sliders */
+.control-row { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+.control-row:last-child { margin-bottom: 0; }
+.control-label {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.73rem; font-weight: 600; color: #374151;
+}
+.value-badge {
+  font-size: 0.68rem; font-weight: 700;
+  background: #e5e7eb; color: #6b7280;
+  padding: 2px 7px; border-radius: 4px;
+  min-width: 38px; text-align: center;
+}
+input[type="range"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 4px;
+  background: #d1d5db; border-radius: 2px;
+  outline: none; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  background: #e94560; border-radius: 50%;
+  cursor: pointer; box-shadow: 0 0 0 3px rgba(233,69,96,0.2);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  background: #e94560; border-radius: 50%;
+  border: none; cursor: pointer;
+}
+
+/* Toggles */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+.toggle-row:last-child { margin-bottom: 0; }
+.toggle-label { font-size: 0.76rem; font-weight: 600; color: #374151; }
+.toggle { position: relative; width: 40px; height: 22px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #d1d5db; border-radius: 11px; transition: .2s;
+}
+.toggle-slider:before {
+  position: absolute; content: "";
+  height: 16px; width: 16px; left: 3px; bottom: 3px;
+  background: #9ca3af; border-radius: 50%; transition: .2s;
+}
+input:checked + .toggle-slider { background: #e94560; }
+input:checked + .toggle-slider:before { transform: translateX(18px); background: white; }
+
+.hint { font-size: 0.67rem; color: #6b7280; line-height: 1.5; margin-top: 5px; }
+
+/* Status */
+.status-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
+.status-dot.loaded { background: #10b981; }
+.status-text { font-size: 0.67rem; color: #6b7280; }
+
+/* Buttons */
+#reset-btn {
+  background: none; border: 1px solid #d1d5db;
+  color: #6b7280; font-family: 'Lexend Deca', sans-serif;
+  font-size: 0.73rem; padding: 6px 12px; border-radius: 6px;
+  cursor: pointer; transition: border-color 0.2s, color 0.2s;
+}
+#reset-btn:hover { border-color: #e94560; color: #e94560; }
+
+#download-btn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, #e94560, #c73652);
+  border: none; border-radius: 10px;
+  color: white; font-family: 'Lexend Deca', sans-serif;
+  font-size: 0.88rem; font-weight: 700;
+  cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+  letter-spacing: 0.3px;
+}
+#download-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+#download-btn:active { transform: translateY(0); }
+#download-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+/* ── CANVAS AREA ── */
+#canvas-area {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  background: #e5e7eb;
+  overflow: hidden;
+  position: relative;
+}
+
+#canvas-wrapper { position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+
+#preview-canvas { display: block; }
+
+#drag-overlay {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  cursor: grab; z-index: 10; display: none;
+}
+#drag-overlay.active { display: block; }
+#drag-overlay.dragging { cursor: grabbing; }
+
+#empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; color: #9ca3af; pointer-events: none;
+}
+#empty-state .big-icon { font-size: 4rem; }
+#empty-state p { font-size: 0.85rem; }
+
+/* Overlay details/summary */
+.overlay-details summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.62rem; font-weight: 700; color: #e94560;
+  text-transform: uppercase; letter-spacing: 1.2px;
+  margin-bottom: 0;
+  user-select: none;
+}
+.overlay-details summary::-webkit-details-marker { display: none; }
+.overlay-details summary::after { content: '▸'; font-size: 0.8rem; }
+.overlay-details[open] summary::after { content: '▾'; }
+.overlay-details[open] summary { margin-bottom: 12px; }
+
+@media (max-width: 700px) {
+  body { flex-direction: column; }
+  #sidebar { width: 100%; min-width: unset; height: auto; overflow-y: visible; flex-shrink: 0; }
+  #canvas-area { flex: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div>
+    <h1>ClashRooms <span>Foto Editor</span></h1>
+  </div>
+
+  <!-- Upload -->
+  <div>
+    <div class="section-title">Foto uploaden</div>
+    <div id="upload-area">
+      <input type="file" id="file-input" accept="image/*">
+      <div class="upload-icon">📷</div>
+      <p><strong>Klik om te uploaden</strong><br>of sleep een foto hierheen</p>
+    </div>
+    <div class="status-row">
+      <div class="status-dot" id="status-dot"></div>
+      <span class="status-text" id="status-text">Geen foto geladen</span>
+    </div>
+  </div>
+
+  <!-- Uitsnede -->
+  <div class="card">
+    <div class="section-title">Uitsnede &amp; positie</div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Zoom</span>
+        <span class="value-badge" id="zoom-label">100%</span>
+      </div>
+      <input type="range" id="zoom-slider" min="50" max="300" value="100" step="1">
+    </div>
+    <p class="hint">Sleep de foto in het preview om te positioneren. Scroll om in te zoomen.</p>
+    <br>
+    <button id="reset-btn">Uitsnede resetten</button>
+  </div>
+
+  <!-- Kleurfilters -->
+  <div class="card">
+    <div class="section-title">Kleurfilters</div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Levendigheid</span>
+        <span class="value-badge" id="vibrance-label">+35</span>
+      </div>
+      <input type="range" id="vibrance-slider" min="0" max="100" value="35" step="1">
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Verzadiging</span>
+        <span class="value-badge" id="saturation-label">+20</span>
+      </div>
+      <input type="range" id="saturation-slider" min="-50" max="100" value="20" step="1">
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Contrast</span>
+        <span class="value-badge" id="contrast-label">+10</span>
+      </div>
+      <input type="range" id="contrast-slider" min="-50" max="100" value="10" step="1">
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Helderheid</span>
+        <span class="value-badge" id="brightness-label">0</span>
+      </div>
+      <input type="range" id="brightness-slider" min="-50" max="50" value="0" step="1">
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="card">
+    <details class="overlay-details">
+      <summary>Overlay elementen</summary>
+      <div class="toggle-row">
+        <span class="toggle-label">Rode &amp; blauwe bogen</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-arcs" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Witte gloed</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-glow" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">ClashRooms logo</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-logo" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="control-row" style="margin-top:10px;">
+        <div class="control-label">
+          <span>Gloedsterkte</span>
+          <span class="value-badge" id="glow-label">100%</span>
+        </div>
+        <input type="range" id="glow-slider" min="0" max="100" value="100" step="1">
+      </div>
+    </details>
+  </div>
+
+  <!-- Download -->
+  <button id="download-btn" disabled>⬇ Downloaden (1080×1080 PNG)</button>
+</div>
+
+<!-- Canvas -->
+<div id="canvas-area">
+  <div id="empty-state">
+    <div class="big-icon">🖼</div>
+    <p>Upload een foto om te beginnen</p>
+  </div>
+  <div id="canvas-wrapper" style="display:none;">
+    <canvas id="preview-canvas"></canvas>
+    <div id="drag-overlay"></div>
+  </div>
+</div>
+
+<script>
+const OUTPUT_SIZE = 1080;
+const PREVIEW_MAX = 680;
+
+// ── Arc paths from SVG files (viewBox 0 0 208.97 536.66) ──
+// cr-framestrokerechts.svg = RED, goes on LEFT side
+const ARC_RED_PATH = 'm206.78,141.23c-4.4-16.42-14.93-30.15-29.65-38.65L0,0v3.51l175.63,101.67c14.03,8.1,24.06,21.18,28.25,36.83,4.19,15.65,2.04,31.99-6.06,46.02L0,530.65v6L200.42,189.52c8.5-14.72,10.76-31.87,6.36-48.29h0Z';
+// cr-framestrokelinks.svg = BLUE, goes on RIGHT side
+const ARC_BLUE_PATH = 'm2.19,141.23c4.4-16.42,14.93-30.15,29.65-38.65L208.97,0v3.51L33.34,105.18c-14.03,8.1-24.06,21.18-28.25,36.83-4.19,15.65-2.04,31.99,6.06,46.02l197.82,342.63v6L8.56,189.52C.06,174.8-2.2,157.65,2.19,141.23Z';
+const ARC_VB_W = 208.97;  // SVG viewBox width
+const ARC_VB_H = 536.66;  // SVG viewBox height
+
+// Arc scale & placement (relative to OUTPUT_SIZE)
+// Scale so arc height = 80% of canvas
+const ARC_SCALE_FACTOR = 0.80;
+// How many px of the arc extend off-screen on each side
+const ARC_OFFSCREEN_FACTOR = 0.09;  // 9% of canvas
+
+// State
+let photoImg = null;
+let photoX = 0, photoY = 0, photoScale = 1;
+let isDragging = false, dragStartX = 0, dragStartY = 0, dragPhotoX = 0, dragPhotoY = 0;
+let previewScale = 1;
+let logoImg = null;
+let arcRedPath2D = null;
+let arcBluePath2D = null;
+
+// DOM
+const canvas = document.getElementById('preview-canvas');
+const ctx = canvas.getContext('2d');
+const dragOverlay = document.getElementById('drag-overlay');
+const canvasWrapper = document.getElementById('canvas-wrapper');
+const emptyState = document.getElementById('empty-state');
+const downloadBtn = document.getElementById('download-btn');
+const statusDot = document.getElementById('status-dot');
+const statusText = document.getElementById('status-text');
+const zoomSlider = document.getElementById('zoom-slider');
+const vibranceSlider = document.getElementById('vibrance-slider');
+const saturationSlider = document.getElementById('saturation-slider');
+const contrastSlider = document.getElementById('contrast-slider');
+const brightnessSlider = document.getElementById('brightness-slider');
+const glowSlider = document.getElementById('glow-slider');
+const toggleArcs = document.getElementById('toggle-arcs');
+const toggleGlow = document.getElementById('toggle-glow');
+const toggleLogo = document.getElementById('toggle-logo');
+
+// ── Init Path2D arcs ──
+function initArcs() {
+  arcRedPath2D = new Path2D(ARC_RED_PATH);
+  arcBluePath2D = new Path2D(ARC_BLUE_PATH);
+}
+
+// ── Load logo ──
+function loadLogo() {
+  logoImg = new Image();
+  logoImg.onload = () => { if (photoImg) render(); };
+  logoImg.onerror = () => { logoImg = null; };
+  logoImg.src = 'assets/logo.png';
+}
+
+// ── Upload ──
+const uploadArea = document.getElementById('upload-area');
+const fileInput = document.getElementById('file-input');
+
+uploadArea.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => e.target.files[0] && loadPhoto(e.target.files[0]));
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault(); uploadArea.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) loadPhoto(e.dataTransfer.files[0]);
+});
+
+function loadPhoto(file) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    if (photoImg) URL.revokeObjectURL(photoImg._blobUrl);
+    photoImg = img;
+    photoImg._blobUrl = url;
+    resetCrop();
+    canvasWrapper.style.display = 'block';
+    emptyState.style.display = 'none';
+    dragOverlay.classList.add('active');
+    downloadBtn.disabled = false;
+    statusDot.classList.add('loaded');
+    statusText.textContent = file.name;
+    render();
+  };
+  img.src = url;
+}
+
+// ── Canvas setup ──
+function setupCanvas() {
+  const area = document.getElementById('canvas-area');
+  const available = Math.min(area.clientWidth - 40, area.clientHeight - 40, PREVIEW_MAX);
+  previewScale = available / OUTPUT_SIZE;
+  const dim = Math.round(OUTPUT_SIZE * previewScale);
+  canvas.width = dim;
+  canvas.height = dim;
+  canvas.style.width = dim + 'px';
+  canvas.style.height = dim + 'px';
+}
+
+// ── Reset crop: photo fills full square (cover) ──
+function resetCrop() {
+  if (!photoImg) return;
+  // Cover: scale so the photo fills the full OUTPUT_SIZE square
+  const ratio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  photoScale = ratio;
+  // Center the photo
+  photoX = (OUTPUT_SIZE - photoImg.width * ratio) / 2;
+  photoY = (OUTPUT_SIZE - photoImg.height * ratio) / 2;
+  zoomSlider.value = 100;
+  document.getElementById('zoom-label').textContent = '100%';
+}
+
+document.getElementById('reset-btn').addEventListener('click', () => { resetCrop(); render(); });
+
+// ── Zoom slider ──
+zoomSlider.addEventListener('input', () => {
+  if (!photoImg) return;
+  const pct = parseInt(zoomSlider.value);
+  document.getElementById('zoom-label').textContent = pct + '%';
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const newScale = baseRatio * (pct / 100);
+  const cx = OUTPUT_SIZE / 2, cy = OUTPUT_SIZE / 2;
+  photoX = cx + (photoX - cx) * (newScale / photoScale);
+  photoY = cy + (photoY - cy) * (newScale / photoScale);
+  photoScale = newScale;
+  render();
+});
+
+// ── Drag to pan ──
+dragOverlay.addEventListener('mousedown', e => {
+  isDragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  dragPhotoX = photoX; dragPhotoY = photoY;
+  dragOverlay.classList.add('dragging');
+});
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  photoX = dragPhotoX + (e.clientX - dragStartX) / previewScale;
+  photoY = dragPhotoY + (e.clientY - dragStartY) / previewScale;
+  render();
+});
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  dragOverlay.classList.remove('dragging');
+});
+dragOverlay.addEventListener('touchstart', e => {
+  const t = e.touches[0];
+  isDragging = true;
+  dragStartX = t.clientX; dragStartY = t.clientY;
+  dragPhotoX = photoX; dragPhotoY = photoY;
+}, { passive: true });
+dragOverlay.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  const t = e.touches[0];
+  photoX = dragPhotoX + (t.clientX - dragStartX) / previewScale;
+  photoY = dragPhotoY + (t.clientY - dragStartY) / previewScale;
+  render();
+}, { passive: true });
+dragOverlay.addEventListener('touchend', () => { isDragging = false; });
+
+// Scroll to zoom
+dragOverlay.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (!photoImg) return;
+  const delta = e.deltaY > 0 ? 0.95 : 1.05;
+  const mx = e.offsetX / previewScale, my = e.offsetY / previewScale;
+  photoX = mx + (photoX - mx) * delta;
+  photoY = my + (photoY - my) * delta;
+  photoScale *= delta;
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const pct = Math.round((photoScale / baseRatio) * 100);
+  const clamped = Math.max(50, Math.min(300, pct));
+  zoomSlider.value = clamped;
+  document.getElementById('zoom-label').textContent = clamped + '%';
+  render();
+}, { passive: false });
+
+// ── Slider labels ──
+function bindSlider(slider, labelId) {
+  slider.addEventListener('input', () => {
+    const v = parseInt(slider.value);
+    document.getElementById(labelId).textContent = (v >= 0 ? '+' : '') + v;
+    render();
+  });
+}
+bindSlider(vibranceSlider, 'vibrance-label');
+bindSlider(saturationSlider, 'saturation-label');
+bindSlider(contrastSlider, 'contrast-label');
+bindSlider(brightnessSlider, 'brightness-label');
+glowSlider.addEventListener('input', () => {
+  document.getElementById('glow-label').textContent = glowSlider.value + '%';
+  render();
+});
+toggleArcs.addEventListener('change', render);
+toggleGlow.addEventListener('change', render);
+toggleLogo.addEventListener('change', render);
+
+// ── Color adjustments (pixel manipulation) ──
+function applyColorAdjustments(imageData, vibrance, saturation, contrast, brightness) {
+  const data = imageData.data;
+  const sat = 1 + saturation / 100;
+  const con = 1 + contrast / 100;
+  const bri = brightness / 100;
+  const vib = vibrance / 100;
+  for (let i = 0; i < data.length; i += 4) {
+    let r = data[i] / 255;
+    let g = data[i+1] / 255;
+    let b = data[i+2] / 255;
+    // Brightness
+    r += bri; g += bri; b += bri;
+    // Contrast
+    r = (r - 0.5) * con + 0.5;
+    g = (g - 0.5) * con + 0.5;
+    b = (b - 0.5) * con + 0.5;
+    // Saturation
+    if (sat !== 1) {
+      const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      r = gray + (r - gray) * sat;
+      g = gray + (g - gray) * sat;
+      b = gray + (b - gray) * sat;
+    }
+    // Vibrance: boost unsaturated pixels more (like Canva vibrance)
+    if (vib > 0) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const currentSat = max <= 0 ? 0 : (max - min) / max;
+      const boost = vib * (1 - currentSat) * 0.8;
+      const gray2 = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      r = gray2 + (r - gray2) * (1 + boost);
+      g = gray2 + (g - gray2) * (1 + boost);
+      b = gray2 + (b - gray2) * (1 + boost);
+    }
+    data[i]   = Math.max(0, Math.min(255, r * 255));
+    data[i+1] = Math.max(0, Math.min(255, g * 255));
+    data[i+2] = Math.max(0, Math.min(255, b * 255));
+  }
+  return imageData;
+}
+
+// ── Draw photo (with cover + color adjustments) ──
+function drawPhoto(oc, S) {
+  // Photo fills the full S×S canvas (cover behavior)
+  const needsAdjust = parseInt(vibranceSlider.value) !== 0 ||
+                      parseInt(saturationSlider.value) !== 0 ||
+                      parseInt(contrastSlider.value) !== 0 ||
+                      parseInt(brightnessSlider.value) !== 0;
+  if (needsAdjust) {
+    const tmp = document.createElement('canvas');
+    tmp.width = S; tmp.height = S;
+    const tc = tmp.getContext('2d');
+    tc.drawImage(photoImg,
+      photoX * (S / OUTPUT_SIZE),
+      photoY * (S / OUTPUT_SIZE),
+      photoImg.width * photoScale * (S / OUTPUT_SIZE),
+      photoImg.height * photoScale * (S / OUTPUT_SIZE)
+    );
+    const id = tc.getImageData(0, 0, S, S);
+    applyColorAdjustments(
+      id,
+      parseInt(vibranceSlider.value),
+      parseInt(saturationSlider.value),
+      parseInt(contrastSlider.value),
+      parseInt(brightnessSlider.value)
+    );
+    tc.putImageData(id, 0, 0);
+    oc.drawImage(tmp, 0, 0);
+  } else {
+    oc.drawImage(photoImg,
+      photoX * (S / OUTPUT_SIZE),
+      photoY * (S / OUTPUT_SIZE),
+      photoImg.width * photoScale * (S / OUTPUT_SIZE),
+      photoImg.height * photoScale * (S / OUTPUT_SIZE)
+    );
+  }
+}
+
+// ── Draw arcs (vector, transparent overlays) ──
+function drawArcs(oc, S) {
+  const arcH = S * ARC_SCALE_FACTOR;              // arc rendered height
+  const arcScale = arcH / ARC_VB_H;              // scale factor for SVG paths
+  const arcW = ARC_VB_W * arcScale;              // arc rendered width
+  const offscreen = S * ARC_OFFSCREEN_FACTOR;    // pixels that go off-screen
+
+  // Red arc — LEFT side
+  // The path tip points RIGHT, so place the left edge off-screen
+  oc.save();
+  oc.translate(-offscreen, 0);
+  oc.scale(arcScale, arcScale);
+  oc.fillStyle = '#df1550';
+  oc.fill(arcRedPath2D);
+  oc.restore();
+
+  // Blue arc — RIGHT side
+  // The path tip points LEFT, mirror position on right edge
+  oc.save();
+  oc.translate(S - arcW + offscreen, 0);
+  oc.scale(arcScale, arcScale);
+  oc.fillStyle = '#193dca';
+  oc.fill(arcBluePath2D);
+  oc.restore();
+}
+
+// ── Draw white glow (bottom-right corner) ──
+function drawGlow(oc, S) {
+  const strength = parseInt(glowSlider.value) / 100;
+  // Layer 1: large soft glow
+  const r1 = S * 0.70;
+  const g1 = oc.createRadialGradient(S, S, 0, S, S, r1);
+  g1.addColorStop(0,    `rgba(255,255,255,${clamp(1.00 * strength)})`);
+  g1.addColorStop(0.12, `rgba(255,255,255,${clamp(0.98 * strength)})`);
+  g1.addColorStop(0.30, `rgba(255,255,255,${clamp(0.90 * strength)})`);
+  g1.addColorStop(0.50, `rgba(255,255,255,${clamp(0.65 * strength)})`);
+  g1.addColorStop(0.72, `rgba(255,255,255,${clamp(0.28 * strength)})`);
+  g1.addColorStop(1,    'rgba(255,255,255,0)');
+  oc.fillStyle = g1;
+  oc.fillRect(0, 0, S, S);
+  // Layer 2: extra brightness punch in the core
+  const r2 = S * 0.32;
+  const g2 = oc.createRadialGradient(S, S, 0, S, S, r2);
+  g2.addColorStop(0,    `rgba(255,255,255,${clamp(0.75 * strength)})`);
+  g2.addColorStop(0.45, `rgba(255,255,255,${clamp(0.35 * strength)})`);
+  g2.addColorStop(1,    'rgba(255,255,255,0)');
+  oc.fillStyle = g2;
+  oc.fillRect(0, 0, S, S);
+}
+function clamp(v) { return Math.max(0, Math.min(1, v)).toFixed(3); }
+
+// ── Draw logo (bottom-right) ──
+function drawLogo(oc, S) {
+  if (!logoImg) return;
+  // Logo target width ≈ 40% of canvas; maintain aspect ratio
+  const logoW = S * 0.40;
+  const logoH = logoW * (logoImg.height / logoImg.width);
+  // Position: right-aligned with 3% margin, bottom-aligned with 3% margin
+  const margin = S * 0.03;
+  const x = S - logoW - margin;
+  const y = S - logoH - margin;
+  oc.drawImage(logoImg, x, y, logoW, logoH);
+}
+
+// ── Render to preview canvas ──
+function render() {
+  if (!photoImg) return;
+  const S = canvas.width;  // preview canvas size
+  ctx.clearRect(0, 0, S, S);
+  drawPhoto(ctx, S);
+  if (toggleArcs.checked) drawArcs(ctx, S);
+  if (toggleGlow.checked) drawGlow(ctx, S);
+  if (toggleLogo.checked) drawLogo(ctx, S);
+}
+
+// ── Render full 1080×1080 for download ──
+function renderFull() {
+  const S = OUTPUT_SIZE;
+  const oc = document.createElement('canvas');
+  oc.width = S; oc.height = S;
+  const c = oc.getContext('2d');
+  drawPhoto(c, S);
+  if (toggleArcs.checked) drawArcs(c, S);
+  if (toggleGlow.checked) drawGlow(c, S);
+  if (toggleLogo.checked) drawLogo(c, S);
+  return oc;
+}
+
+// ── Download ──
+downloadBtn.addEventListener('click', () => {
+  if (!photoImg) return;
+  const out = renderFull();
+  const link = document.createElement('a');
+  link.download = 'clashrooms-groepsfoto.png';
+  link.href = out.toDataURL('image/png');
+  link.click();
+});
+
+// ── Init ──
+setupCanvas();
+window.addEventListener('resize', () => { setupCanvas(); render(); });
+initArcs();
+loadLogo();
+</script>
+</body>
+</html>

@@ -408,13 +408,68 @@ textarea.text-input:focus { border-color: #e94560; }
   <div class="card">
     <div class="section-title">Bewegingseffecten</div>
     <div class="toggle-row">
-      <span class="toggle-label">Klik om in te zoomen</span>
+      <span class="toggle-label">Zoom naar punt</span>
       <label class="toggle">
         <input type="checkbox" id="toggle-click-zoom">
         <span class="toggle-slider"></span>
       </label>
     </div>
-    <p class="hint">Klik op een punt in de preview om daar naartoe in te zoomen</p>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Zoom snelheid</span>
+        <span class="value-badge" id="zoom-speed-label">800ms</span>
+      </div>
+      <input type="range" id="zoom-speed-slider" min="200" max="2000" value="800" step="100">
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>X coördinaat</span>
+        <span class="value-badge" id="zoom-x-label">50%</span>
+      </div>
+      <input type="range" id="zoom-x-slider" min="0" max="100" value="50" step="1">
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Y coördinaat</span>
+        <span class="value-badge" id="zoom-y-label">50%</span>
+      </div>
+      <input type="range" id="zoom-y-slider" min="0" max="100" value="50" step="1">
+    </div>
+    <p class="hint">Selecteer het punt waar gezoomd moet worden, stel de snelheid in, en schakel zoom in</p>
+  </div>
+
+  <!-- Bewegingseffecten -->
+  <div class="card">
+    <div class="section-title">Bewegingseffecten</div>
+    <div class="toggle-row">
+      <span class="toggle-label">Zoom naar punt</span>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-click-zoom">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Zoom snelheid</span>
+        <span class="value-badge" id="zoom-speed-label">800ms</span>
+      </div>
+      <input type="range" id="zoom-speed-slider" min="200" max="2000" value="800" step="100">
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>X coördinaat</span>
+        <span class="value-badge" id="zoom-x-label">50%</span>
+      </div>
+      <input type="range" id="zoom-x-slider" min="0" max="100" value="50" step="1">
+    </div>
+    <div class="control-row">
+      <div class="control-label">
+        <span>Y coördinaat</span>
+        <span class="value-badge" id="zoom-y-label">50%</span>
+      </div>
+      <input type="range" id="zoom-y-slider" min="0" max="100" value="50" step="1">
+    </div>
+    <p class="hint">Selecteer het punt waar gezoomd moet worden, stel de snelheid in, en schakel zoom in</p>
   </div>
 
   <!-- Download -->
@@ -457,6 +512,18 @@ let isZoomAnimating = false;
 let zoomAnimationStart = null;
 let zoomAnimationFrom = { x: 0, y: 0, scale: 1 };
 let zoomAnimationTo = { x: 0, y: 0, scale: 1 };
+let zoomDuration = 800;
+let zoomTargetX = 50;
+let zoomTargetY = 50;
+
+let isZoomAnimating = false;
+let zoomAnimationStart = null;
+let zoomAnimationFrom = { x: 0, y: 0, scale: 1 };
+let zoomAnimationTo = { x: 0, y: 0, scale: 1 };
+let zoomDuration = 800;
+let zoomTargetX = 50;
+let zoomTargetY = 50;
+
 
 // DOM
 const canvas     = document.getElementById('preview-canvas');
@@ -587,31 +654,10 @@ dragOverlay.addEventListener('touchmove', e => {
   render();
 }, { passive: true });
 dragOverlay.addEventListener('touchend', () => { isDragging = false; });
-dragOverlay.addEventListener('click', e => {
-  if (!toggleClickZoom.checked || !photoImg || isDragging) return;
-  e.preventDefault();
-
-  const clickX = e.offsetX / previewScale;
-  const clickY = e.offsetY / previewScale;
-
-  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
-  const targetZoom = Math.min(250, baseRatio * 2.5);
-  const targetScale = targetZoom / 100 * baseRatio;
-
-  const targetX = clickX - OUTPUT_SIZE / 2 / (targetScale / photoScale);
-  const targetY = clickY - OUTPUT_SIZE / 2 / (targetScale / photoScale);
-
-  isZoomAnimating = true;
-  zoomAnimationStart = Date.now();
-  zoomAnimationFrom = { x: photoX, y: photoY, scale: photoScale };
-  zoomAnimationTo = { x: targetX, y: targetY, scale: targetScale };
-  requestAnimationFrame(animateZoom);
-});
-
+// Zoom animation
 function animateZoom() {
   const elapsed = Date.now() - zoomAnimationStart;
-  const duration = 800;
-  const progress = Math.min(elapsed / duration, 1);
+  const progress = Math.min(elapsed / zoomDuration, 1);
   const eased = 1 - Math.pow(1 - progress, 3);
 
   photoX = zoomAnimationFrom.x + (zoomAnimationTo.x - zoomAnimationFrom.x) * eased;
@@ -637,6 +683,76 @@ function animateZoom() {
     isZoomAnimating = false;
   }
 }
+
+dragOverlay.addEventListener('click', e => {
+  if (!toggleClickZoom.checked || !photoImg || isDragging) return;
+  
+  const clickX = (zoomTargetX / 100) * OUTPUT_SIZE;
+  const clickY = (zoomTargetY / 100) * OUTPUT_SIZE;
+
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const targetZoom = Math.min(250, baseRatio * 2.5);
+  const targetScale = targetZoom / 100 * baseRatio;
+
+  const targetX = clickX - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+  const targetY = clickY - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+
+  isZoomAnimating = true;
+  zoomAnimationStart = Date.now();
+  zoomAnimationFrom = { x: photoX, y: photoY, scale: photoScale };
+  zoomAnimationTo = { x: targetX, y: targetY, scale: targetScale };
+  requestAnimationFrame(animateZoom);
+});
+
+// Zoom animation
+function animateZoom() {
+  const elapsed = Date.now() - zoomAnimationStart;
+  const progress = Math.min(elapsed / zoomDuration, 1);
+  const eased = 1 - Math.pow(1 - progress, 3);
+
+  photoX = zoomAnimationFrom.x + (zoomAnimationTo.x - zoomAnimationFrom.x) * eased;
+  photoY = zoomAnimationFrom.y + (zoomAnimationTo.y - zoomAnimationFrom.y) * eased;
+  photoScale = zoomAnimationFrom.scale + (zoomAnimationTo.scale - zoomAnimationFrom.scale) * eased;
+
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const pct = Math.round((photoScale / baseRatio) * 100);
+  const clamped = Math.max(50, Math.min(300, pct));
+  zoomSlider.value = clamped;
+  document.getElementById('zoom-label').textContent = clamped + '%';
+
+  const S = canvas.width;
+  ctx.clearRect(0, 0, S, S);
+  drawPhoto(ctx, S);
+  if (toggleArcs.checked) drawArcs(ctx, S);
+  if (toggleGlow.checked) drawGlow(ctx, S);
+  if (toggleLogo.checked) drawLogo(ctx, S);
+
+  if (progress < 1) {
+    requestAnimationFrame(animateZoom);
+  } else {
+    isZoomAnimating = false;
+  }
+}
+
+dragOverlay.addEventListener('click', e => {
+  if (!toggleClickZoom.checked || !photoImg || isDragging) return;
+  
+  const clickX = (zoomTargetX / 100) * OUTPUT_SIZE;
+  const clickY = (zoomTargetY / 100) * OUTPUT_SIZE;
+
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const targetZoom = Math.min(250, baseRatio * 2.5);
+  const targetScale = targetZoom / 100 * baseRatio;
+
+  const targetX = clickX - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+  const targetY = clickY - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+
+  isZoomAnimating = true;
+  zoomAnimationStart = Date.now();
+  zoomAnimationFrom = { x: photoX, y: photoY, scale: photoScale };
+  zoomAnimationTo = { x: targetX, y: targetY, scale: targetScale };
+  requestAnimationFrame(animateZoom);
+});
 
 dragOverlay.addEventListener('wheel', e => {
   e.preventDefault();
@@ -686,10 +802,41 @@ textYSlider.addEventListener('input', () => {
 });
 adText.addEventListener('input', render);
 fontSelect.addEventListener('change', render);
+zoomSpeedSlider.addEventListener('input', () => {
+  zoomDuration = parseInt(zoomSpeedSlider.value);
+  document.getElementById('zoom-speed-label').textContent = zoomDuration + 'ms';
+});
+
+zoomXSlider.addEventListener('input', () => {
+  zoomTargetX = parseInt(zoomXSlider.value);
+  document.getElementById('zoom-x-label').textContent = zoomTargetX + '%';
+});
+
+zoomYSlider.addEventListener('input', () => {
+  zoomTargetY = parseInt(zoomYSlider.value);
+  document.getElementById('zoom-y-label').textContent = zoomTargetY + '%';
+});
+
+zoomSpeedSlider.addEventListener('input', () => {
+  zoomDuration = parseInt(zoomSpeedSlider.value);
+  document.getElementById('zoom-speed-label').textContent = zoomDuration + 'ms';
+});
+
+zoomXSlider.addEventListener('input', () => {
+  zoomTargetX = parseInt(zoomXSlider.value);
+  document.getElementById('zoom-x-label').textContent = zoomTargetX + '%';
+});
+
+zoomYSlider.addEventListener('input', () => {
+  zoomTargetY = parseInt(zoomYSlider.value);
+  document.getElementById('zoom-y-label').textContent = zoomTargetY + '%';
+});
+
 toggleArcs.addEventListener('change', render);
 toggleGlow.addEventListener('change', render);
 toggleStripe.addEventListener('change', render);
 toggleLogo.addEventListener('change', render);
+toggleClickZoom.addEventListener('change', render);
 toggleClickZoom.addEventListener('change', render);
 
 // â”€â”€ Color adjustments â”€â”€

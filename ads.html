@@ -244,7 +244,7 @@ textarea.text-input:focus { border-color: #e94560; }
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.1</span></h1>
+    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.2</span></h1>
   </div>
 
   <!-- Upload -->
@@ -404,6 +404,19 @@ textarea.text-input:focus { border-color: #e94560; }
     <p class="hint" style="margin-top:6px;">Geschikt voor Google Ads video-campagnes en Social Media Stories. Activeer een animatie om te beginnen.</p>
   </div>
 
+  <!-- Bewegingseffecten -->
+  <div class="card">
+    <div class="section-title">Bewegingseffecten</div>
+    <div class="toggle-row">
+      <span class="toggle-label">Klik om in te zoomen</span>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-click-zoom">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <p class="hint">Klik op een punt in de preview om daar naartoe in te zoomen</p>
+  </div>
+
   <!-- Download -->
   <button id="download-btn" disabled>&#11015; Downloaden (1080&times;1080 PNG)</button>
 </div>
@@ -440,6 +453,10 @@ let previewScale = 1;
 let logoImg = null;
 let arcRedPath2D = null;
 let arcBluePath2D = null;
+let isZoomAnimating = false;
+let zoomAnimationStart = null;
+let zoomAnimationFrom = { x: 0, y: 0, scale: 1 };
+let zoomAnimationTo = { x: 0, y: 0, scale: 1 };
 
 // DOM
 const canvas     = document.getElementById('preview-canvas');
@@ -570,6 +587,57 @@ dragOverlay.addEventListener('touchmove', e => {
   render();
 }, { passive: true });
 dragOverlay.addEventListener('touchend', () => { isDragging = false; });
+dragOverlay.addEventListener('click', e => {
+  if (!toggleClickZoom.checked || !photoImg || isDragging) return;
+  e.preventDefault();
+
+  const clickX = e.offsetX / previewScale;
+  const clickY = e.offsetY / previewScale;
+
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const targetZoom = Math.min(250, baseRatio * 2.5);
+  const targetScale = targetZoom / 100 * baseRatio;
+
+  const targetX = clickX - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+  const targetY = clickY - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+
+  isZoomAnimating = true;
+  zoomAnimationStart = Date.now();
+  zoomAnimationFrom = { x: photoX, y: photoY, scale: photoScale };
+  zoomAnimationTo = { x: targetX, y: targetY, scale: targetScale };
+  requestAnimationFrame(animateZoom);
+});
+
+function animateZoom() {
+  const elapsed = Date.now() - zoomAnimationStart;
+  const duration = 800;
+  const progress = Math.min(elapsed / duration, 1);
+  const eased = 1 - Math.pow(1 - progress, 3);
+
+  photoX = zoomAnimationFrom.x + (zoomAnimationTo.x - zoomAnimationFrom.x) * eased;
+  photoY = zoomAnimationFrom.y + (zoomAnimationTo.y - zoomAnimationFrom.y) * eased;
+  photoScale = zoomAnimationFrom.scale + (zoomAnimationTo.scale - zoomAnimationFrom.scale) * eased;
+
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const pct = Math.round((photoScale / baseRatio) * 100);
+  const clamped = Math.max(50, Math.min(300, pct));
+  zoomSlider.value = clamped;
+  document.getElementById('zoom-label').textContent = clamped + '%';
+
+  const S = canvas.width;
+  ctx.clearRect(0, 0, S, S);
+  drawPhoto(ctx, S);
+  if (toggleArcs.checked) drawArcs(ctx, S);
+  if (toggleGlow.checked) drawGlow(ctx, S);
+  if (toggleLogo.checked) drawLogo(ctx, S);
+
+  if (progress < 1) {
+    requestAnimationFrame(animateZoom);
+  } else {
+    isZoomAnimating = false;
+  }
+}
+
 dragOverlay.addEventListener('wheel', e => {
   e.preventDefault();
   if (!photoImg) return;
@@ -622,6 +690,7 @@ toggleArcs.addEventListener('change', render);
 toggleGlow.addEventListener('change', render);
 toggleStripe.addEventListener('change', render);
 toggleLogo.addEventListener('change', render);
+toggleClickZoom.addEventListener('change', render);
 
 // â”€â”€ Color adjustments â”€â”€
 function applyColorAdjustments(imageData, vibrance, saturation, contrast, brightness) {

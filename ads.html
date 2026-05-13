@@ -482,7 +482,6 @@ let zoomDuration = 800;
 let zoomTargetX = 50;
 let zoomTargetY = 50;
 
-
 // DOM
 const canvas     = document.getElementById('preview-canvas');
 const ctx        = canvas.getContext('2d');
@@ -561,7 +560,7 @@ function setupCanvas() {
 }
 
 function resetCrop() {
-  if (!photoImg || isZoomAnimating) return;
+  if (!photoImg) return;
   const ratio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
   photoScale = ratio;
   photoX = (OUTPUT_SIZE - photoImg.width * ratio) / 2;
@@ -573,7 +572,7 @@ function resetCrop() {
 document.getElementById('reset-btn').addEventListener('click', () => { resetCrop(); render(); });
 
 zoomSlider.addEventListener('input', () => {
-  if (!photoImg || isZoomAnimating) return;
+  if (!photoImg) return;
   const pct = parseInt(zoomSlider.value);
   document.getElementById('zoom-label').textContent = pct + '%';
   const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
@@ -612,7 +611,22 @@ dragOverlay.addEventListener('touchmove', e => {
   render();
 }, { passive: true });
 dragOverlay.addEventListener('touchend', () => { isDragging = false; });
-// Zoom animation
+dragOverlay.addEventListener('click', e => {
+  if (!toggleClickZoom.checked || !photoImg || isDragging) return;
+  const clickX = (zoomTargetX / 100) * OUTPUT_SIZE;
+  const clickY = (zoomTargetY / 100) * OUTPUT_SIZE;
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const targetZoom = Math.min(250, baseRatio * 2.5);
+  const targetScale = targetZoom / 100 * baseRatio;
+  const targetX = clickX - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+  const targetY = clickY - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+  isZoomAnimating = true;
+  zoomAnimationStart = Date.now();
+  zoomAnimationFrom = { x: photoX, y: photoY, scale: photoScale };
+  zoomAnimationTo = { x: targetX, y: targetY, scale: targetScale };
+  requestAnimationFrame(animateZoom);
+});
+
 function animateZoom() {
   const elapsed = Date.now() - zoomAnimationStart;
   const progress = Math.min(elapsed / zoomDuration, 1);
@@ -631,47 +645,13 @@ function animateZoom() {
   if (toggleArcs.checked) drawArcs(ctx, S);
   if (toggleGlow.checked) drawGlow(ctx, S);
   if (toggleLogo.checked) drawLogo(ctx, S);
-  if (progress < 1) {
-    requestAnimationFrame(animateZoom);
-  } else {
-    isZoomAnimating = false;
-  }
+  if (progress < 1) requestAnimationFrame(animateZoom);
+  else isZoomAnimating = false;
 }
-
-dragOverlay.addEventListener('click', e => {
-  if (!toggleClickZoom.checked || !photoImg || isDragging) return;
-  const clickX = (zoomTargetX / 100) * OUTPUT_SIZE;
-  const clickY = (zoomTargetY / 100) * OUTPUT_SIZE;
-  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
-  const targetZoom = Math.min(250, baseRatio * 2.5);
-  const targetScale = targetZoom / 100 * baseRatio;
-  const targetX = clickX - OUTPUT_SIZE / 2 / (targetScale / photoScale);
-  const targetY = clickY - OUTPUT_SIZE / 2 / (targetScale / photoScale);
-  isZoomAnimating = true;
-  zoomAnimationStart = Date.now();
-  zoomAnimationFrom = { x: photoX, y: photoY, scale: photoScale };
-  zoomAnimationTo = { x: targetX, y: targetY, scale: targetScale };
-  requestAnimationFrame(animateZoom);
-});
-
-zoomSpeedSlider.addEventListener('input', () => {
-  zoomDuration = parseInt(zoomSpeedSlider.value);
-  document.getElementById('zoom-speed-label').textContent = zoomDuration + 'ms';
-});
-
-zoomXSlider.addEventListener('input', () => {
-  zoomTargetX = parseInt(zoomXSlider.value);
-  document.getElementById('zoom-x-label').textContent = zoomTargetX + '%';
-});
-
-zoomYSlider.addEventListener('input', () => {
-  zoomTargetY = parseInt(zoomYSlider.value);
-  document.getElementById('zoom-y-label').textContent = zoomTargetY + '%';
-});
 
 dragOverlay.addEventListener('wheel', e => {
   e.preventDefault();
-  if (!photoImg || isZoomAnimating) return;
+  if (!photoImg) return;
   const delta = e.deltaY > 0 ? 0.95 : 1.05;
   const mx = e.offsetX / previewScale, my = e.offsetY / previewScale;
   photoX = mx + (photoX - mx) * delta;
@@ -721,6 +701,18 @@ toggleArcs.addEventListener('change', render);
 toggleGlow.addEventListener('change', render);
 toggleStripe.addEventListener('change', render);
 toggleLogo.addEventListener('change', render);
+zoomSpeedSlider.addEventListener('input', () => {
+  zoomDuration = parseInt(zoomSpeedSlider.value);
+  document.getElementById('zoom-speed-label').textContent = zoomDuration + 'ms';
+});
+zoomXSlider.addEventListener('input', () => {
+  zoomTargetX = parseInt(zoomXSlider.value);
+  document.getElementById('zoom-x-label').textContent = zoomTargetX + '%';
+});
+zoomYSlider.addEventListener('input', () => {
+  zoomTargetY = parseInt(zoomYSlider.value);
+  document.getElementById('zoom-y-label').textContent = zoomTargetY + '%';
+});
 toggleClickZoom.addEventListener('change', render);
 
 // â”€â”€ Color adjustments â”€â”€
@@ -951,7 +943,7 @@ function drawLogo(oc, S) {
 }
 
 function render(t = 0) {
-  if (!photoImg || isZoomAnimating) return;
+  if (!photoImg) return;
   const S = canvas.width;
   ctx.clearRect(0, 0, S, S);
   drawPhoto(ctx, S);
@@ -979,7 +971,7 @@ function renderFull(t = 0) {
 }
 
 downloadBtn.addEventListener('click', () => {
-  if (!photoImg || isZoomAnimating) return;
+  if (!photoImg) return;
   const out  = renderFull();
   const link = document.createElement('a');
   link.download = 'clashrooms-ad.png';
@@ -1107,7 +1099,7 @@ function drawBadge(oc, S, t) {
 
 // ── Video opname ──
 recordBtn.addEventListener('click', () => {
-  if (!photoImg || isZoomAnimating) return;
+  if (!photoImg) return;
   const dur = parseInt(recordDuration.value) || 3;
 
   const stream   = canvas.captureStream(30);

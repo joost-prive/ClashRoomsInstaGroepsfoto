@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
@@ -207,7 +207,7 @@ input:checked + .toggle-slider:before { transform: translateX(18px); background:
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Foto Editor</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.1</span></h1>
+    <h1>ClashRooms <span>Foto Editor</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.3</span></h1>
   </div>
 
   <!-- Upload -->
@@ -314,6 +314,19 @@ input:checked + .toggle-slider:before { transform: translateX(18px); background:
     </details>
   </div>
 
+  <!-- Bewegingseffecten -->
+  <div class="card">
+    <div class="section-title">Bewegingseffecten</div>
+    <div class="toggle-row">
+      <span class="toggle-label">Klik om in te zoomen</span>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-click-zoom">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <p class="hint">Klik op een punt in de preview om daar naartoe in te zoomen</p>
+  </div>
+
   <!-- Download -->
   <button id="download-btn" disabled>⬇ Downloaden (1080×1080 PNG)</button>
 </div>
@@ -334,21 +347,13 @@ input:checked + .toggle-slider:before { transform: translateX(18px); background:
 const OUTPUT_SIZE = 1080;
 const PREVIEW_MAX = 680;
 
-// ── Arc paths from SVG files (viewBox 0 0 208.97 536.66) ──
-// cr-framestrokerechts.svg = RED, goes on LEFT side
 const ARC_RED_PATH = 'm206.78,141.23c-4.4-16.42-14.93-30.15-29.65-38.65L0,0v3.51l175.63,101.67c14.03,8.1,24.06,21.18,28.25,36.83,4.19,15.65,2.04,31.99-6.06,46.02L0,530.65v6L200.42,189.52c8.5-14.72,10.76-31.87,6.36-48.29h0Z';
-// cr-framestrokelinks.svg = BLUE, goes on RIGHT side
 const ARC_BLUE_PATH = 'm2.19,141.23c4.4-16.42,14.93-30.15,29.65-38.65L208.97,0v3.51L33.34,105.18c-14.03,8.1-24.06,21.18-28.25,36.83-4.19,15.65-2.04,31.99,6.06,46.02l197.82,342.63v6L8.56,189.52C.06,174.8-2.2,157.65,2.19,141.23Z';
-const ARC_VB_W = 208.97;  // SVG viewBox width
-const ARC_VB_H = 536.66;  // SVG viewBox height
-
-// Arc scale & placement (relative to OUTPUT_SIZE)
-// Scale so arc height = 80% of canvas
+const ARC_VB_W = 208.97;
+const ARC_VB_H = 536.66;
 const ARC_SCALE_FACTOR = 0.80;
-// How many px of the arc extend off-screen on each side
-const ARC_OFFSCREEN_FACTOR = 0.09;  // 9% of canvas
+const ARC_OFFSCREEN_FACTOR = 0.09;
 
-// State
 let photoImg = null;
 let photoX = 0, photoY = 0, photoScale = 1;
 let isDragging = false, dragStartX = 0, dragStartY = 0, dragPhotoX = 0, dragPhotoY = 0;
@@ -356,8 +361,11 @@ let previewScale = 1;
 let logoImg = null;
 let arcRedPath2D = null;
 let arcBluePath2D = null;
+let isZoomAnimating = false;
+let zoomAnimationStart = null;
+let zoomAnimationFrom = { x: 0, y: 0, scale: 1 };
+let zoomAnimationTo = { x: 0, y: 0, scale: 1 };
 
-// DOM
 const canvas = document.getElementById('preview-canvas');
 const ctx = canvas.getContext('2d');
 const dragOverlay = document.getElementById('drag-overlay');
@@ -376,14 +384,13 @@ const glowSlider = document.getElementById('glow-slider');
 const toggleArcs = document.getElementById('toggle-arcs');
 const toggleGlow = document.getElementById('toggle-glow');
 const toggleLogo = document.getElementById('toggle-logo');
+const toggleClickZoom = document.getElementById('toggle-click-zoom');
 
-// ── Init Path2D arcs ──
 function initArcs() {
   arcRedPath2D = new Path2D(ARC_RED_PATH);
   arcBluePath2D = new Path2D(ARC_BLUE_PATH);
 }
 
-// ── Load logo ──
 function loadLogo() {
   logoImg = new Image();
   logoImg.onload = () => { if (photoImg) render(); };
@@ -391,7 +398,6 @@ function loadLogo() {
   logoImg.src = 'assets/logo.png';
 }
 
-// ── Upload ──
 const uploadArea = document.getElementById('upload-area');
 const fileInput = document.getElementById('file-input');
 
@@ -423,7 +429,6 @@ function loadPhoto(file) {
   img.src = url;
 }
 
-// ── Canvas setup ──
 function setupCanvas() {
   const area = document.getElementById('canvas-area');
   const available = Math.min(area.clientWidth - 40, area.clientHeight - 40, PREVIEW_MAX);
@@ -435,13 +440,10 @@ function setupCanvas() {
   canvas.style.height = dim + 'px';
 }
 
-// ── Reset crop: photo fills full square (cover) ──
 function resetCrop() {
   if (!photoImg) return;
-  // Cover: scale so the photo fills the full OUTPUT_SIZE square
   const ratio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
   photoScale = ratio;
-  // Center the photo
   photoX = (OUTPUT_SIZE - photoImg.width * ratio) / 2;
   photoY = (OUTPUT_SIZE - photoImg.height * ratio) / 2;
   zoomSlider.value = 100;
@@ -450,7 +452,6 @@ function resetCrop() {
 
 document.getElementById('reset-btn').addEventListener('click', () => { resetCrop(); render(); });
 
-// ── Zoom slider ──
 zoomSlider.addEventListener('input', () => {
   if (!photoImg) return;
   const pct = parseInt(zoomSlider.value);
@@ -464,7 +465,6 @@ zoomSlider.addEventListener('input', () => {
   render();
 });
 
-// ── Drag to pan ──
 dragOverlay.addEventListener('mousedown', e => {
   isDragging = true;
   dragStartX = e.clientX; dragStartY = e.clientY;
@@ -496,7 +496,57 @@ dragOverlay.addEventListener('touchmove', e => {
 }, { passive: true });
 dragOverlay.addEventListener('touchend', () => { isDragging = false; });
 
-// Scroll to zoom
+dragOverlay.addEventListener('click', e => {
+  if (!toggleClickZoom.checked || !photoImg || isDragging) return;
+  e.preventDefault();
+
+  const clickX = e.offsetX / previewScale;
+  const clickY = e.offsetY / previewScale;
+
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const targetZoom = Math.min(250, baseRatio * 2.5);
+  const targetScale = targetZoom / 100 * baseRatio;
+
+  const targetX = clickX - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+  const targetY = clickY - OUTPUT_SIZE / 2 / (targetScale / photoScale);
+
+  isZoomAnimating = true;
+  zoomAnimationStart = Date.now();
+  zoomAnimationFrom = { x: photoX, y: photoY, scale: photoScale };
+  zoomAnimationTo = { x: targetX, y: targetY, scale: targetScale };
+  requestAnimationFrame(animateZoom);
+});
+
+function animateZoom() {
+  const elapsed = Date.now() - zoomAnimationStart;
+  const duration = 800;
+  const progress = Math.min(elapsed / duration, 1);
+  const eased = 1 - Math.pow(1 - progress, 3);
+
+  photoX = zoomAnimationFrom.x + (zoomAnimationTo.x - zoomAnimationFrom.x) * eased;
+  photoY = zoomAnimationFrom.y + (zoomAnimationTo.y - zoomAnimationFrom.y) * eased;
+  photoScale = zoomAnimationFrom.scale + (zoomAnimationTo.scale - zoomAnimationFrom.scale) * eased;
+
+  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
+  const pct = Math.round((photoScale / baseRatio) * 100);
+  const clamped = Math.max(50, Math.min(300, pct));
+  zoomSlider.value = clamped;
+  document.getElementById('zoom-label').textContent = clamped + '%';
+
+  const S = canvas.width;
+  ctx.clearRect(0, 0, S, S);
+  drawPhoto(ctx, S);
+  if (toggleArcs.checked) drawArcs(ctx, S);
+  if (toggleGlow.checked) drawGlow(ctx, S);
+  if (toggleLogo.checked) drawLogo(ctx, S);
+
+  if (progress < 1) {
+    requestAnimationFrame(animateZoom);
+  } else {
+    isZoomAnimating = false;
+  }
+}
+
 dragOverlay.addEventListener('wheel', e => {
   e.preventDefault();
   if (!photoImg) return;
@@ -513,7 +563,6 @@ dragOverlay.addEventListener('wheel', e => {
   render();
 }, { passive: false });
 
-// ── Slider labels ──
 function bindSlider(slider, labelId) {
   slider.addEventListener('input', () => {
     const v = parseInt(slider.value);
@@ -533,8 +582,8 @@ glowSlider.addEventListener('input', () => {
 toggleArcs.addEventListener('change', render);
 toggleGlow.addEventListener('change', render);
 toggleLogo.addEventListener('change', render);
+toggleClickZoom.addEventListener('change', render);
 
-// ── Color adjustments (pixel manipulation) ──
 function applyColorAdjustments(imageData, vibrance, saturation, contrast, brightness) {
   const data = imageData.data;
   const sat = 1 + saturation / 100;
@@ -545,20 +594,16 @@ function applyColorAdjustments(imageData, vibrance, saturation, contrast, bright
     let r = data[i] / 255;
     let g = data[i+1] / 255;
     let b = data[i+2] / 255;
-    // Brightness
     r += bri; g += bri; b += bri;
-    // Contrast
     r = (r - 0.5) * con + 0.5;
     g = (g - 0.5) * con + 0.5;
     b = (b - 0.5) * con + 0.5;
-    // Saturation
     if (sat !== 1) {
       const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
       r = gray + (r - gray) * sat;
       g = gray + (g - gray) * sat;
       b = gray + (b - gray) * sat;
     }
-    // Vibrance: boost unsaturated pixels more (like Canva vibrance)
     if (vib > 0) {
       const max = Math.max(r, g, b);
       const min = Math.min(r, g, b);
@@ -576,7 +621,6 @@ function applyColorAdjustments(imageData, vibrance, saturation, contrast, bright
   return imageData;
 }
 
-// ── Sharpening (unsharp mask convolution) ──
 function applySharpening(imageData, strength) {
   if (strength === 0) return imageData;
   const s = (strength / 100) * 1.5;
@@ -600,9 +644,7 @@ function applySharpening(imageData, strength) {
   return imageData;
 }
 
-// ── Draw photo (with cover + color adjustments) ──
 function drawPhoto(oc, S) {
-  // Photo fills the full S×S canvas (cover behavior)
   const needsAdjust = parseInt(vibranceSlider.value) !== 0 ||
                       parseInt(saturationSlider.value) !== 0 ||
                       parseInt(contrastSlider.value) !== 0 ||
@@ -639,15 +681,12 @@ function drawPhoto(oc, S) {
   }
 }
 
-// ── Draw arcs (vector, transparent overlays) ──
 function drawArcs(oc, S) {
-  const arcH = S * ARC_SCALE_FACTOR;              // arc rendered height
-  const arcScale = arcH / ARC_VB_H;              // scale factor for SVG paths
-  const arcW = ARC_VB_W * arcScale;              // arc rendered width
-  const offscreen = S * ARC_OFFSCREEN_FACTOR;    // pixels that go off-screen
+  const arcH = S * ARC_SCALE_FACTOR;
+  const arcScale = arcH / ARC_VB_H;
+  const arcW = ARC_VB_W * arcScale;
+  const offscreen = S * ARC_OFFSCREEN_FACTOR;
 
-  // Red arc — LEFT side
-  // The path tip points RIGHT, so place the left edge off-screen
   oc.save();
   oc.translate(-offscreen, 0);
   oc.scale(arcScale, arcScale);
@@ -655,8 +694,6 @@ function drawArcs(oc, S) {
   oc.fill(arcRedPath2D);
   oc.restore();
 
-  // Blue arc — RIGHT side
-  // The path tip points LEFT, mirror position on right edge
   oc.save();
   oc.translate(S - arcW + offscreen, 0);
   oc.scale(arcScale, arcScale);
@@ -665,10 +702,8 @@ function drawArcs(oc, S) {
   oc.restore();
 }
 
-// ── Draw white glow (bottom-right corner) ──
 function drawGlow(oc, S) {
   const strength = parseInt(glowSlider.value) / 100;
-  // Layer 1: large soft glow
   const r1 = S * 0.70;
   const g1 = oc.createRadialGradient(S, S, 0, S, S, r1);
   g1.addColorStop(0,    `rgba(255,255,255,${clamp(1.00 * strength)})`);
@@ -679,7 +714,6 @@ function drawGlow(oc, S) {
   g1.addColorStop(1,    'rgba(255,255,255,0)');
   oc.fillStyle = g1;
   oc.fillRect(0, 0, S, S);
-  // Layer 2: extra brightness punch in the core
   const r2 = S * 0.32;
   const g2 = oc.createRadialGradient(S, S, 0, S, S, r2);
   g2.addColorStop(0,    `rgba(255,255,255,${clamp(0.75 * strength)})`);
@@ -690,23 +724,19 @@ function drawGlow(oc, S) {
 }
 function clamp(v) { return Math.max(0, Math.min(1, v)).toFixed(3); }
 
-// ── Draw logo (bottom-right) ──
 function drawLogo(oc, S) {
   if (!logoImg) return;
-  // Logo target width ≈ 40% of canvas; maintain aspect ratio
   const logoW = S * 0.40;
   const logoH = logoW * (logoImg.height / logoImg.width);
-  // Position: right-aligned with 3% margin, bottom-aligned with 3% margin
   const margin = S * 0.03;
   const x = S - logoW - margin;
   const y = S - logoH - margin;
   oc.drawImage(logoImg, x, y, logoW, logoH);
 }
 
-// ── Render to preview canvas ──
 function render() {
-  if (!photoImg) return;
-  const S = canvas.width;  // preview canvas size
+  if (!photoImg || isZoomAnimating) return;
+  const S = canvas.width;
   ctx.clearRect(0, 0, S, S);
   drawPhoto(ctx, S);
   if (toggleArcs.checked) drawArcs(ctx, S);
@@ -714,7 +744,6 @@ function render() {
   if (toggleLogo.checked) drawLogo(ctx, S);
 }
 
-// ── Render full 1080×1080 for download ──
 function renderFull() {
   const S = OUTPUT_SIZE;
   const oc = document.createElement('canvas');
@@ -727,7 +756,6 @@ function renderFull() {
   return oc;
 }
 
-// ── Download ──
 downloadBtn.addEventListener('click', () => {
   if (!photoImg) return;
   const out = renderFull();
@@ -737,7 +765,6 @@ downloadBtn.addEventListener('click', () => {
   link.click();
 });
 
-// ── Init ──
 setupCanvas();
 window.addEventListener('resize', () => { setupCanvas(); render(); });
 initArcs();

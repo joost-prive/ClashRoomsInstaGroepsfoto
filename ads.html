@@ -504,7 +504,7 @@ textarea.text-input:focus { border-color: #e94560; }
 
 <script>
 const OUTPUT_SIZE = 1080;
-const PREVIEW_MAX = 680;
+const PREVIEW_MAX = 1000;
 
 // Arc paths (same SVG shapes as booking photo editor)
 const ARC_RED_PATH  = 'm206.78,141.23c-4.4-16.42-14.93-30.15-29.65-38.65L0,0v3.51l175.63,101.67c14.03,8.1,24.06,21.18,28.25,36.83,4.19,15.65,2.04,31.99-6.06,46.02L0,530.65v6L200.42,189.52c8.5-14.72,10.76-31.87,6.36-48.29h0Z';
@@ -624,10 +624,17 @@ function setMode(video) {
 
 function setupCanvas() {
   const area = document.getElementById('canvas-area');
-  const available = Math.min(area.clientWidth - 40, area.clientHeight - 40, PREVIEW_MAX);
+  // Calculate maximum size that fits in the available space
+  const maxWidth = area.clientWidth;
+  const maxHeight = area.clientHeight;
+  const available = Math.min(maxWidth, maxHeight);
+
   previewScale = available / OUTPUT_SIZE;
-  const dim = Math.round(OUTPUT_SIZE * previewScale);
-  canvas.width = dim; canvas.height = dim;
+  const dim = available;  // Use actual available size
+
+  // Internal canvas: always full resolution for sharp rendering
+  canvas.width = OUTPUT_SIZE; canvas.height = OUTPUT_SIZE;
+  // Display size: scaled down via CSS for screen space
   canvas.style.width = dim + 'px'; canvas.style.height = dim + 'px';
 }
 
@@ -786,13 +793,22 @@ function applySharpening(imageData, strength) {
   return imageData;
 }
 
+<<<<<<< HEAD
 function drawPhoto(oc, S, _zx, _zy, _zs) {
+=======
+function drawPhoto(oc, S) {
+  // Enable high-quality image smoothing
+  oc.imageSmoothingEnabled = true;
+  oc.imageSmoothingQuality = 'high';
+
+>>>>>>> claude/laughing-visvesvaraya-986902
   const needsAdjust =
     parseInt(vibranceSlider.value)  !== 0 ||
     parseInt(saturationSlider.value)!== 0 ||
     parseInt(contrastSlider.value)  !== 0 ||
     parseInt(brightnessSlider.value)!== 0 ||
     parseInt(sharpnessSlider.value) !== 0;
+<<<<<<< HEAD
   // Gebruik zoom-coördinaten als die meegegeven zijn, anders de globale waarden
   const px = (_zx !== undefined ? _zx : photoX);
   const py = (_zy !== undefined ? _zy : photoY);
@@ -800,10 +816,18 @@ function drawPhoto(oc, S, _zx, _zy, _zs) {
   const sx = px*(S/OUTPUT_SIZE), sy = py*(S/OUTPUT_SIZE);
   const sw = photoImg.width*ps*(S/OUTPUT_SIZE);
   const sh = photoImg.height*ps*(S/OUTPUT_SIZE);
+=======
+
+>>>>>>> claude/laughing-visvesvaraya-986902
   if (needsAdjust) {
     const tmp = document.createElement('canvas'); tmp.width = S; tmp.height = S;
     const tc = tmp.getContext('2d');
-    tc.drawImage(photoImg, sx, sy, sw, sh);
+    tc.imageSmoothingEnabled = true;
+    tc.imageSmoothingQuality = 'high';
+
+    // Draw full image at correct scale and position
+    tc.drawImage(photoImg, photoX, photoY, photoImg.width * photoScale, photoImg.height * photoScale);
+
     let id = tc.getImageData(0,0,S,S);
     applyColorAdjustments(id,
       parseInt(vibranceSlider.value), parseInt(saturationSlider.value),
@@ -812,7 +836,7 @@ function drawPhoto(oc, S, _zx, _zy, _zs) {
     tc.putImageData(id,0,0);
     oc.drawImage(tmp,0,0);
   } else {
-    oc.drawImage(photoImg, sx, sy, sw, sh);
+    oc.drawImage(photoImg, photoX, photoY, photoImg.width * photoScale, photoImg.height * photoScale);
   }
 }
 

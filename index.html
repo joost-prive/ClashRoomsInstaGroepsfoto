@@ -207,7 +207,7 @@ input:checked + .toggle-slider:before { transform: translateX(18px); background:
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Foto Editor</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.1</span></h1>
+    <h1>ClashRooms <span>Foto Editor</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v0.3</span></h1>
   </div>
 
   <!-- Upload -->
@@ -332,7 +332,7 @@ input:checked + .toggle-slider:before { transform: translateX(18px); background:
 
 <script>
 const OUTPUT_SIZE = 1080;
-const PREVIEW_MAX = 680;
+const PREVIEW_MAX = 1000;
 
 // ── Arc paths from SVG files (viewBox 0 0 208.97 536.66) ──
 // cr-framestrokerechts.svg = RED, goes on LEFT side
@@ -426,11 +426,18 @@ function loadPhoto(file) {
 // ── Canvas setup ──
 function setupCanvas() {
   const area = document.getElementById('canvas-area');
-  const available = Math.min(area.clientWidth - 40, area.clientHeight - 40, PREVIEW_MAX);
+  // Calculate maximum size that fits in the available space
+  const maxWidth = area.clientWidth;
+  const maxHeight = area.clientHeight;
+  const available = Math.min(maxWidth, maxHeight);
+
   previewScale = available / OUTPUT_SIZE;
-  const dim = Math.round(OUTPUT_SIZE * previewScale);
-  canvas.width = dim;
-  canvas.height = dim;
+  const dim = available;  // Use actual available size
+
+  // Internal canvas: always full resolution (1080px) for sharp rendering
+  canvas.width = OUTPUT_SIZE;
+  canvas.height = OUTPUT_SIZE;
+  // Display size: scaled down via CSS for screen space
   canvas.style.width = dim + 'px';
   canvas.style.height = dim + 'px';
 }
@@ -602,7 +609,10 @@ function applySharpening(imageData, strength) {
 
 // ── Draw photo (with cover + color adjustments) ──
 function drawPhoto(oc, S) {
-  // Photo fills the full S×S canvas (cover behavior)
+  // Enable high-quality image smoothing
+  oc.imageSmoothingEnabled = true;
+  oc.imageSmoothingQuality = 'high';
+
   const needsAdjust = parseInt(vibranceSlider.value) !== 0 ||
                       parseInt(saturationSlider.value) !== 0 ||
                       parseInt(contrastSlider.value) !== 0 ||
@@ -612,12 +622,12 @@ function drawPhoto(oc, S) {
     const tmp = document.createElement('canvas');
     tmp.width = S; tmp.height = S;
     const tc = tmp.getContext('2d');
-    tc.drawImage(photoImg,
-      photoX * (S / OUTPUT_SIZE),
-      photoY * (S / OUTPUT_SIZE),
-      photoImg.width * photoScale * (S / OUTPUT_SIZE),
-      photoImg.height * photoScale * (S / OUTPUT_SIZE)
-    );
+    tc.imageSmoothingEnabled = true;
+    tc.imageSmoothingQuality = 'high';
+
+    // Draw full image at correct scale and position
+    tc.drawImage(photoImg, photoX, photoY, photoImg.width * photoScale, photoImg.height * photoScale);
+
     let id = tc.getImageData(0, 0, S, S);
     applyColorAdjustments(
       id,
@@ -631,10 +641,10 @@ function drawPhoto(oc, S) {
     oc.drawImage(tmp, 0, 0);
   } else {
     oc.drawImage(photoImg,
-      photoX * (S / OUTPUT_SIZE),
-      photoY * (S / OUTPUT_SIZE),
-      photoImg.width * photoScale * (S / OUTPUT_SIZE),
-      photoImg.height * photoScale * (S / OUTPUT_SIZE)
+      photoX,
+      photoY,
+      photoImg.width * photoScale,
+      photoImg.height * photoScale
     );
   }
 }

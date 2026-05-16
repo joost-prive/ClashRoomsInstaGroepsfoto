@@ -238,13 +238,31 @@ textarea.text-input:focus { border-color: #e94560; }
   #sidebar { width: 100%; min-width: unset; height: auto; overflow-y: visible; flex-shrink: 0; }
   #canvas-area { flex: 1; }
 }
+
+/* ── MODE SELECTOR ── */
+#mode-selector { display:none; }
+.mode-btn-group { display:flex; gap:8px; }
+.mode-btn {
+  flex:1; padding:9px 0;
+  border:2px solid #d1d5db; border-radius:8px;
+  background:#f9fafb;
+  font-family:'Lexend Deca',sans-serif;
+  font-size:0.78rem; font-weight:700;
+  color:#6b7280; cursor:pointer;
+  transition:all 0.18s;
+}
+.mode-btn.active { border-color:#e94560; background:#e94560; color:#fff; }
+.mode-btn:hover:not(.active) { border-color:#e94560; color:#e94560; }
+
+/* ── ZOOM CARD ── */
+#zoom-card { display:none; }
 </style>
 </head>
 <body>
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.3</span></h1>
+    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.0</span></h1>
   </div>
 
   <!-- Upload -->
@@ -258,6 +276,16 @@ textarea.text-input:focus { border-color: #e94560; }
     <div class="status-row">
       <div class="status-dot" id="status-dot"></div>
       <span class="status-text" id="status-text">Geen foto geladen</span>
+    </div>
+  </div>
+
+
+  <!-- ① Exporttype (verschijnt na upload) -->
+  <div id="mode-selector" class="card">
+    <div class="section-title">Exporttype</div>
+    <div class="mode-btn-group">
+      <button class="mode-btn active" id="mode-image-btn">🖼 Image</button>
+      <button class="mode-btn" id="mode-video-btn">🎬 Video</button>
     </div>
   </div>
 
@@ -393,8 +421,52 @@ textarea.text-input:focus { border-color: #e94560; }
     </details>
   </div>
 
+
+  <!-- ② Zoom & Focus (verschijnt na upload) -->
+  <div class="card" id="zoom-card">
+    <div class="section-title">Zoom &amp; focus</div>
+    <div class="toggle-row">
+      <span class="toggle-label">Zoom animatie</span>
+      <label class="toggle">
+        <input type="checkbox" id="toggle-zoom">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div id="zoom-controls" style="display:none; margin-top:12px;">
+      <div class="control-row">
+        <div class="control-label">
+          <span>Zoom naar X</span>
+          <span class="value-badge" id="zoom-x-label">50%</span>
+        </div>
+        <input type="range" id="zoom-x-slider" min="0" max="100" value="50" step="1">
+      </div>
+      <div class="control-row">
+        <div class="control-label">
+          <span>Zoom naar Y</span>
+          <span class="value-badge" id="zoom-y-label">50%</span>
+        </div>
+        <input type="range" id="zoom-y-slider" min="0" max="100" value="50" step="1">
+      </div>
+      <div class="control-row">
+        <div class="control-label">
+          <span>Duur</span>
+          <span class="value-badge" id="zoom-dur-label">2.0s</span>
+        </div>
+        <input type="range" id="zoom-dur-slider" min="5" max="50" value="20" step="1">
+      </div>
+      <div class="control-row">
+        <div class="control-label">
+          <span>Inzoomfactor</span>
+          <span class="value-badge" id="zoom-scale-label">2.0&#215;</span>
+        </div>
+        <input type="range" id="zoom-scale-slider" min="12" max="40" value="20" step="1">
+      </div>
+      <p class="hint">Het rode doelwit toont het zoompunt (alleen preview).</p>
+    </div>
+  </div>
+
   <!-- Video exporteren -->
-  <div class="card">
+  <div class="card" id="video-export-card" style="display:none;">
     <div class="section-title">Video exporteren</div>
     <div class="control-row">
       <div class="control-label"><span>Duur</span><span class="value-badge" id="duration-label">3s</span></div>
@@ -402,40 +474,6 @@ textarea.text-input:focus { border-color: #e94560; }
     </div>
     <button id="record-btn" disabled>⏺ Opnemen als WebM-video</button>
     <p class="hint" style="margin-top:6px;">Geschikt voor Google Ads video-campagnes en Social Media Stories. Activeer een animatie om te beginnen.</p>
-  </div>
-
-  <!-- Bewegingseffecten -->
-  <div class="card">
-    <div class="section-title">Bewegingseffecten</div>
-    <div class="toggle-row">
-      <span class="toggle-label">Zoom naar punt</span>
-      <label class="toggle">
-        <input type="checkbox" id="toggle-click-zoom">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="control-row">
-      <div class="control-label">
-        <span>Zoom snelheid</span>
-        <span class="value-badge" id="zoom-speed-label">800ms</span>
-      </div>
-      <input type="range" id="zoom-speed-slider" min="200" max="2000" value="800" step="100">
-    </div>
-    <div class="control-row">
-      <div class="control-label">
-        <span>X coördinaat</span>
-        <span class="value-badge" id="zoom-x-label">50%</span>
-      </div>
-      <input type="range" id="zoom-x-slider" min="0" max="100" value="50" step="1">
-    </div>
-    <div class="control-row">
-      <div class="control-label">
-        <span>Y coördinaat</span>
-        <span class="value-badge" id="zoom-y-label">50%</span>
-      </div>
-      <input type="range" id="zoom-y-slider" min="0" max="100" value="50" step="1">
-    </div>
-    <p class="hint">Selecteer het punt waar gezoomd moet worden, stel de snelheid in, en schakel zoom in</p>
   </div>
 
   <!-- Download -->
@@ -467,6 +505,12 @@ const ARC_SCALE_FACTOR     = 0.42;  // bogen beperkt tot bovenste ~42% van canva
 const ARC_OFFSCREEN_FACTOR = 0.12;  // meer van de boog buiten beeld
 
 // State
+let isVideoMode   = false;
+let isZoomEnabled = false;
+let zoomCenterX   = 50;   // %
+let zoomCenterY   = 50;   // %
+let zoomDurSec    = 2.0;  // seconden
+let zoomMaxScale  = 2.0;  // inzoomfactor
 let photoImg = null;
 let photoX = 0, photoY = 0, photoScale = 1;
 let isDragging = false, dragStartX = 0, dragStartY = 0, dragPhotoX = 0, dragPhotoY = 0;
@@ -474,15 +518,19 @@ let previewScale = 1;
 let logoImg = null;
 let arcRedPath2D = null;
 let arcBluePath2D = null;
-let isZoomAnimating = false;
-let zoomAnimationStart = null;
-let zoomAnimationFrom = { x: 0, y: 0, scale: 1 };
-let zoomAnimationTo = { x: 0, y: 0, scale: 1 };
-let zoomDuration = 800;
-let zoomTargetX = 50;
-let zoomTargetY = 50;
 
 // DOM
+const modeSelector    = document.getElementById('mode-selector');
+const modeImageBtn    = document.getElementById('mode-image-btn');
+const modeVideoBtn    = document.getElementById('mode-video-btn');
+const videoExportCard = document.getElementById('video-export-card');
+const zoomCard        = document.getElementById('zoom-card');
+const toggleZoom      = document.getElementById('toggle-zoom');
+const zoomControls    = document.getElementById('zoom-controls');
+const zoomXSlider     = document.getElementById('zoom-x-slider');
+const zoomYSlider     = document.getElementById('zoom-y-slider');
+const zoomDurSlider   = document.getElementById('zoom-dur-slider');
+const zoomScaleSlider = document.getElementById('zoom-scale-slider');
 const canvas     = document.getElementById('preview-canvas');
 const ctx        = canvas.getContext('2d');
 const dragOverlay   = document.getElementById('drag-overlay');
@@ -507,10 +555,6 @@ const toggleArcs   = document.getElementById('toggle-arcs');
 const toggleGlow   = document.getElementById('toggle-glow');
 const toggleStripe = document.getElementById('toggle-stripe');
 const toggleLogo   = document.getElementById('toggle-logo');
-const toggleClickZoom  = document.getElementById('toggle-click-zoom');
-const zoomSpeedSlider = document.getElementById('zoom-speed-slider');
-const zoomXSlider      = document.getElementById('zoom-x-slider');
-const zoomYSlider      = document.getElementById('zoom-y-slider');
 
 function initArcs() {
   arcRedPath2D  = new Path2D(ARC_RED_PATH);
@@ -549,9 +593,25 @@ function loadPhoto(file) {
     downloadBtn.disabled = false;
     statusDot.classList.add('loaded');
     statusText.textContent = file.name;
+    modeSelector.style.display = '';
+    zoomCard.style.display = '';
+    setMode(false);
     render();
   };
   img.src = url;
+}
+
+
+// ── Mode wisselen ──
+function setMode(video) {
+  isVideoMode = video;
+  modeImageBtn.classList.toggle('active', !video);
+  modeVideoBtn.classList.toggle('active', video);
+  videoExportCard.style.display = video ? '' : 'none';
+  downloadBtn.style.display     = video ? 'none' : '';
+  // Record alleen enabled als video-mode én er iets te animeren is
+  const canRecord = video && (isZoomEnabled || (badgeImg !== null && badgeAnimSelect.value !== 'none'));
+  recordBtn.disabled = !canRecord;
 }
 
 function setupCanvas() {
@@ -615,44 +675,6 @@ dragOverlay.addEventListener('touchmove', e => {
   render();
 }, { passive: true });
 dragOverlay.addEventListener('touchend', () => { isDragging = false; });
-dragOverlay.addEventListener('click', e => {
-  if (!toggleClickZoom.checked || !photoImg || isDragging) return;
-  const clickX = (zoomTargetX / 100) * OUTPUT_SIZE;
-  const clickY = (zoomTargetY / 100) * OUTPUT_SIZE;
-  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
-  const targetZoom = Math.min(250, baseRatio * 2.5);
-  const targetScale = targetZoom / 100 * baseRatio;
-  const targetX = clickX - OUTPUT_SIZE / 2 / (targetScale / photoScale);
-  const targetY = clickY - OUTPUT_SIZE / 2 / (targetScale / photoScale);
-  isZoomAnimating = true;
-  zoomAnimationStart = Date.now();
-  zoomAnimationFrom = { x: photoX, y: photoY, scale: photoScale };
-  zoomAnimationTo = { x: targetX, y: targetY, scale: targetScale };
-  requestAnimationFrame(animateZoom);
-});
-
-function animateZoom() {
-  const elapsed = Date.now() - zoomAnimationStart;
-  const progress = Math.min(elapsed / zoomDuration, 1);
-  const eased = 1 - Math.pow(1 - progress, 3);
-  photoX = zoomAnimationFrom.x + (zoomAnimationTo.x - zoomAnimationFrom.x) * eased;
-  photoY = zoomAnimationFrom.y + (zoomAnimationTo.y - zoomAnimationFrom.y) * eased;
-  photoScale = zoomAnimationFrom.scale + (zoomAnimationTo.scale - zoomAnimationFrom.scale) * eased;
-  const baseRatio = Math.max(OUTPUT_SIZE / photoImg.width, OUTPUT_SIZE / photoImg.height);
-  const pct = Math.round((photoScale / baseRatio) * 100);
-  const clamped = Math.max(50, Math.min(300, pct));
-  zoomSlider.value = clamped;
-  document.getElementById('zoom-label').textContent = clamped + '%';
-  const S = canvas.width;
-  ctx.clearRect(0, 0, S, S);
-  drawPhoto(ctx, S);
-  if (toggleArcs.checked) drawArcs(ctx, S);
-  if (toggleGlow.checked) drawGlow(ctx, S);
-  if (toggleLogo.checked) drawLogo(ctx, S);
-  if (progress < 1) requestAnimationFrame(animateZoom);
-  else isZoomAnimating = false;
-}
-
 dragOverlay.addEventListener('wheel', e => {
   e.preventDefault();
   if (!photoImg) return;
@@ -705,19 +727,6 @@ toggleArcs.addEventListener('change', render);
 toggleGlow.addEventListener('change', render);
 toggleStripe.addEventListener('change', render);
 toggleLogo.addEventListener('change', render);
-zoomSpeedSlider.addEventListener('input', () => {
-  zoomDuration = parseInt(zoomSpeedSlider.value);
-  document.getElementById('zoom-speed-label').textContent = zoomDuration + 'ms';
-});
-zoomXSlider.addEventListener('input', () => {
-  zoomTargetX = parseInt(zoomXSlider.value);
-  document.getElementById('zoom-x-label').textContent = zoomTargetX + '%';
-});
-zoomYSlider.addEventListener('input', () => {
-  zoomTargetY = parseInt(zoomYSlider.value);
-  document.getElementById('zoom-y-label').textContent = zoomTargetY + '%';
-});
-toggleClickZoom.addEventListener('change', render);
 
 // â”€â”€ Color adjustments â”€â”€
 function applyColorAdjustments(imageData, vibrance, saturation, contrast, brightness) {
@@ -769,7 +778,7 @@ function applySharpening(imageData, strength) {
   return imageData;
 }
 
-function drawPhoto(oc, S, _zx = null, _zy = null, _zs = null) {
+function drawPhoto(oc, S, _zx, _zy, _zs) {
   const needsAdjust =
     parseInt(vibranceSlider.value)  !== 0 ||
     parseInt(saturationSlider.value)!== 0 ||
@@ -949,57 +958,62 @@ function drawLogo(oc, S) {
 
 // ── Zoom berekening ──
 function calcZoom(t) {
-  if (!isZoomEnabled || !photoImg) return null;
+  if (!isZoomEnabled || !photoImg) return {};
   const progress = Math.min(t / zoomDurSec, 1);
+  // ease-in-out cubic
   const eased = progress < 0.5
     ? 4 * progress * progress * progress
     : 1 - Math.pow(-2 * progress + 2, 3) / 2;
   const startScale = photoScale;
   const endScale   = startScale * zoomMaxScale;
-  const sc = startScale + (endScale - startScale) * eased;
-  const focusX = (zoomCenterX / 100) * OUTPUT_SIZE;
-  const focusY = (zoomCenterY / 100) * OUTPUT_SIZE;
-  const x = focusX - (focusX - photoX) * (sc / startScale);
-  const y = focusY - (focusY - photoY) * (sc / startScale);
+  const sc  = startScale + (endScale - startScale) * eased;
+  const fx  = (zoomCenterX / 100) * OUTPUT_SIZE;
+  const fy  = (zoomCenterY / 100) * OUTPUT_SIZE;
+  // Houd focuspunt op dezelfde positie terwijl we inzoomen
+  const x   = fx - (fx - photoX) * (sc / startScale);
+  const y   = fy - (fy - photoY) * (sc / startScale);
   return { x, y, scale: sc };
 }
 
-// ── Crosshair (alleen preview) ──
+// ── Crosshair (alleen preview, nooit in export) ──
 function drawCrosshair(oc, S) {
   if (!isZoomEnabled) return;
   const cx  = (zoomCenterX / 100) * S;
   const cy  = (zoomCenterY / 100) * S;
   const r   = S * 0.042;
-  const arm = S * 0.065;
+  const arm = S * 0.07;
   oc.save();
   oc.strokeStyle = '#ff2255';
-  oc.lineWidth   = Math.max(1.5, S * 0.0025);
+  oc.lineWidth   = Math.max(1.5, S * 0.003);
   oc.setLineDash([]);
+  // Cirkel
   oc.beginPath(); oc.arc(cx, cy, r, 0, Math.PI * 2); oc.stroke();
+  // Kruislijnen
   oc.beginPath();
-  oc.moveTo(cx - r - arm, cy); oc.lineTo(cx - r, cy);
-  oc.moveTo(cx + r, cy);       oc.lineTo(cx + r + arm, cy);
-  oc.moveTo(cx, cy - r - arm); oc.lineTo(cx, cy - r);
-  oc.moveTo(cx, cy + r);       oc.lineTo(cx, cy + r + arm);
+  oc.moveTo(cx - r - arm, cy); oc.lineTo(cx - r + 2, cy);
+  oc.moveTo(cx + r - 2, cy);   oc.lineTo(cx + r + arm, cy);
+  oc.moveTo(cx, cy - r - arm); oc.lineTo(cx, cy - r + 2);
+  oc.moveTo(cx, cy + r - 2);   oc.lineTo(cx, cy + r + arm);
   oc.stroke();
+  // Stip
   oc.fillStyle = '#ff2255';
-  oc.beginPath(); oc.arc(cx, cy, S * 0.006, 0, Math.PI * 2); oc.fill();
+  oc.beginPath(); oc.arc(cx, cy, S * 0.007, 0, Math.PI * 2); oc.fill();
   oc.restore();
 }
 
 function render(t = 0) {
   if (!photoImg) return;
   const S = canvas.width;
-  ctx.clearRect(0, 0, S, S);
   const z = calcZoom(t);
-  drawPhoto(ctx, S, z ? z.x : null, z ? z.y : null, z ? z.scale : null);
+  ctx.clearRect(0, 0, S, S);
+  drawPhoto(ctx, S, z.x, z.y, z.scale);
   if (toggleArcs.checked)   drawArcs(ctx, S);
   if (toggleGlow.checked)   drawGlow(ctx, S);
   if (toggleStripe.checked) drawStripe(ctx, S);
   drawText(ctx, S);
   if (toggleLogo.checked)   drawLogo(ctx, S);
   drawBadge(ctx, S, t);
-  drawCrosshair(ctx, S);
+  drawCrosshair(ctx, S);  // preview only
 }
 
 function renderFull(t = 0) {
@@ -1008,7 +1022,7 @@ function renderFull(t = 0) {
   oc.width = S; oc.height = S;
   const c = oc.getContext('2d');
   const zf = calcZoom(t);
-  drawPhoto(c, S, zf ? zf.x : null, zf ? zf.y : null, zf ? zf.scale : null);
+  drawPhoto(c, S, zf.x, zf.y, zf.scale);
   if (toggleArcs.checked)   drawArcs(c, S);
   if (toggleGlow.checked)   drawGlow(c, S);
   if (toggleStripe.checked) drawStripe(c, S);
@@ -1097,7 +1111,7 @@ function currentAnimTime() {
 
 // ── Animatielus ──
 function checkAnimLoop() {
-  const needsAnim = (badgeImg !== null && badgeAnimSelect.value !== 'none') || isZoomEnabled;
+  const needsAnim = isZoomEnabled || (badgeImg !== null && badgeAnimSelect.value !== 'none');
   if (needsAnim && animFrameId === null) {
     animStartTime = performance.now();
     function loop(ts) {
@@ -1106,11 +1120,11 @@ function checkAnimLoop() {
       animFrameId = requestAnimationFrame(loop);
     }
     animFrameId = requestAnimationFrame(loop);
-    if (isVideoMode) recordBtn.disabled = false;
+    recordBtn.disabled = !isVideoMode;
   } else if (!needsAnim && animFrameId !== null) {
     cancelAnimationFrame(animFrameId);
     animFrameId = null; animStartTime = null;
-    if (isVideoMode) recordBtn.disabled = true;
+    recordBtn.disabled = true;
     render(0);
   }
 }
@@ -1179,6 +1193,41 @@ setupCanvas();
 window.addEventListener('resize', () => { setupCanvas(); render(); });
 initArcs();
 loadLogo();
+
+// ── Mode-knoppen ──
+modeImageBtn.addEventListener('click', () => setMode(false));
+modeVideoBtn.addEventListener('click', () => setMode(true));
+
+// ── Zoom-toggle ──
+toggleZoom.addEventListener('change', () => {
+  isZoomEnabled = toggleZoom.checked;
+  zoomControls.style.display = isZoomEnabled ? '' : 'none';
+  checkAnimLoop();
+  render();
+  // Record-knop bijwerken
+  if (isVideoMode) recordBtn.disabled = !isZoomEnabled && !(badgeImg !== null && badgeAnimSelect.value !== 'none');
+});
+
+// ── Zoom-positie/duur sliders ──
+zoomXSlider.addEventListener('input', () => {
+  zoomCenterX = parseInt(zoomXSlider.value);
+  document.getElementById('zoom-x-label').textContent = zoomCenterX + '%';
+  render();
+});
+zoomYSlider.addEventListener('input', () => {
+  zoomCenterY = parseInt(zoomYSlider.value);
+  document.getElementById('zoom-y-label').textContent = zoomCenterY + '%';
+  render();
+});
+zoomDurSlider.addEventListener('input', () => {
+  zoomDurSec = parseInt(zoomDurSlider.value) / 10;
+  document.getElementById('zoom-dur-label').textContent = zoomDurSec.toFixed(1) + 's';
+});
+zoomScaleSlider.addEventListener('input', () => {
+  zoomMaxScale = parseInt(zoomScaleSlider.value) / 10;
+  document.getElementById('zoom-scale-label').textContent = zoomMaxScale.toFixed(1) + '×';
+});
+
 </script>
 </body>
 </html>

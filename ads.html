@@ -556,10 +556,14 @@ function loadPhoto(file) {
 
 function setupCanvas() {
   const area = document.getElementById('canvas-area');
-  // Use all available space (minus small margin)
-  const available = Math.min(area.clientWidth - 20, area.clientHeight - 20);
+  // Calculate maximum size that fits in the available space
+  const maxWidth = area.clientWidth;
+  const maxHeight = area.clientHeight;
+  const available = Math.min(maxWidth, maxHeight);
+
   previewScale = available / OUTPUT_SIZE;
-  const dim = Math.round(OUTPUT_SIZE * previewScale);
+  const dim = available;  // Use actual available size
+
   // Internal canvas: always full resolution for sharp rendering
   canvas.width = OUTPUT_SIZE; canvas.height = OUTPUT_SIZE;
   // Display size: scaled down via CSS for screen space

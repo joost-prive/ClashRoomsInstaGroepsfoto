@@ -793,32 +793,21 @@ function applySharpening(imageData, strength) {
   return imageData;
 }
 
-<<<<<<< HEAD
 function drawPhoto(oc, S, _zx, _zy, _zs) {
-=======
-function drawPhoto(oc, S) {
   // Enable high-quality image smoothing
   oc.imageSmoothingEnabled = true;
   oc.imageSmoothingQuality = 'high';
 
->>>>>>> claude/laughing-visvesvaraya-986902
   const needsAdjust =
     parseInt(vibranceSlider.value)  !== 0 ||
     parseInt(saturationSlider.value)!== 0 ||
     parseInt(contrastSlider.value)  !== 0 ||
     parseInt(brightnessSlider.value)!== 0 ||
     parseInt(sharpnessSlider.value) !== 0;
-<<<<<<< HEAD
   // Gebruik zoom-coördinaten als die meegegeven zijn, anders de globale waarden
   const px = (_zx !== undefined ? _zx : photoX);
   const py = (_zy !== undefined ? _zy : photoY);
   const ps = (_zs !== undefined ? _zs : photoScale);
-  const sx = px*(S/OUTPUT_SIZE), sy = py*(S/OUTPUT_SIZE);
-  const sw = photoImg.width*ps*(S/OUTPUT_SIZE);
-  const sh = photoImg.height*ps*(S/OUTPUT_SIZE);
-=======
-
->>>>>>> claude/laughing-visvesvaraya-986902
   if (needsAdjust) {
     const tmp = document.createElement('canvas'); tmp.width = S; tmp.height = S;
     const tc = tmp.getContext('2d');
@@ -826,7 +815,7 @@ function drawPhoto(oc, S) {
     tc.imageSmoothingQuality = 'high';
 
     // Draw full image at correct scale and position
-    tc.drawImage(photoImg, photoX, photoY, photoImg.width * photoScale, photoImg.height * photoScale);
+    tc.drawImage(photoImg, px, py, photoImg.width * ps, photoImg.height * ps);
 
     let id = tc.getImageData(0,0,S,S);
     applyColorAdjustments(id,
@@ -836,7 +825,7 @@ function drawPhoto(oc, S) {
     tc.putImageData(id,0,0);
     oc.drawImage(tmp,0,0);
   } else {
-    oc.drawImage(photoImg, photoX, photoY, photoImg.width * photoScale, photoImg.height * photoScale);
+    oc.drawImage(photoImg, px, py, photoImg.width * ps, photoImg.height * ps);
   }
 }
 

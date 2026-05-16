@@ -262,7 +262,7 @@ textarea.text-input:focus { border-color: #e94560; }
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.1</span></h1>
+    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.2</span></h1>
   </div>
 
   <!-- Upload -->
@@ -593,8 +593,8 @@ function loadPhoto(file) {
     downloadBtn.disabled = false;
     statusDot.classList.add('loaded');
     statusText.textContent = file.name;
-    modeSelector.style.display = '';
-    zoomCard.style.display = '';
+    modeSelector.style.display = 'block';
+    zoomCard.style.display = 'block';
     setMode(false);
     render();
   };

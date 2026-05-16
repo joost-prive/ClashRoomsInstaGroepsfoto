@@ -426,7 +426,8 @@ function loadPhoto(file) {
 // ── Canvas setup ──
 function setupCanvas() {
   const area = document.getElementById('canvas-area');
-  const available = Math.min(area.clientWidth - 40, area.clientHeight - 40, PREVIEW_MAX);
+  // Use all available space (minus small margin)
+  const available = Math.min(area.clientWidth - 20, area.clientHeight - 20);
   previewScale = available / OUTPUT_SIZE;
   const dim = Math.round(OUTPUT_SIZE * previewScale);
   // Internal canvas: always full resolution (1080px) for sharp rendering

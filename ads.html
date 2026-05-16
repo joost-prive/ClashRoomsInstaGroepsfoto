@@ -261,7 +261,7 @@ textarea.text-input:focus { border-color: #e94560; }
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.4</span></h1>
+    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.5</span></h1>
   </div>
 
   <!-- Upload -->
@@ -367,7 +367,8 @@ textarea.text-input:focus { border-color: #e94560; }
           </div>
           <input type="range" id="zoom-scale-slider" min="12" max="40" value="20" step="1">
         </div>
-        <p class="hint">Het rode doelwit toont het zoompunt in de preview.</p>
+        <button id="preview-zoom-btn" style="width:100%;margin-top:10px;padding:9px;background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;border-radius:8px;color:#fff;font-family:'Lexend Deca',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;transition:opacity 0.2s;">▶ Preview opnieuw afspelen</button>
+        <p class="hint" style="margin-top:6px;">Het rode doelwit toont het zoompunt in de preview.</p>
       </div>
     </div>
 
@@ -1212,6 +1213,17 @@ setMode(false); // Image-modus als standaard bij laden pagina
 // ── Mode-knoppen ──
 modeImageBtn.addEventListener('click', () => setMode(false));
 modeVideoBtn.addEventListener('click', () => setMode(true));
+
+// ── Preview-knop ──
+document.getElementById('preview-zoom-btn').addEventListener('click', () => {
+  if (animFrameId !== null) {
+    animStartTime = performance.now(); // herstart animatie vanaf t=0
+  } else {
+    // animatielus was gestopt, herstart hem
+    isZoomEnabled = true;
+    checkAnimLoop();
+  }
+});
 
 // ── Zoom-toggle ──
 toggleZoom.addEventListener('change', () => {

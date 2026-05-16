@@ -1192,7 +1192,13 @@ recordBtn.addEventListener('click', () => {
   // Herstart animatie vanaf t=0 zodat zoom vanaf begin afspeelt
   animStartTime = performance.now();
 
-  const stream   = canvas.captureStream(30);
+  // Maak offscreen canvas voor video-opname zonder crosshair
+  const recordCanvas = document.createElement('canvas');
+  recordCanvas.width = canvas.width;
+  recordCanvas.height = canvas.height;
+  const recordCtx = recordCanvas.getContext('2d');
+
+  const stream   = recordCanvas.captureStream(30);
   const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
     ? 'video/webm;codecs=vp9' : 'video/webm';
   const recorder = new MediaRecorder(stream, { mimeType });
@@ -1214,7 +1220,27 @@ recordBtn.addEventListener('click', () => {
   recordBtn.classList.add('recording');
   recordBtn.disabled = true;
   recorder.start();
-  setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, dur * 1000);
+
+  // Render frames naar offscreen canvas
+  const frameInterval = setInterval(() => {
+    const elapsed = performance.now() - animStartTime;
+    const t = (elapsed / 1000) % 10000;
+    const z = calcZoom(t);
+    recordCtx.clearRect(0, 0, recordCanvas.width, recordCanvas.height);
+    drawPhoto(recordCtx, recordCanvas.width, z.x, z.y, z.scale);
+    if (toggleArcs.checked)   drawArcs(recordCtx, recordCanvas.width);
+    if (toggleGlow.checked)   drawGlow(recordCtx, recordCanvas.width);
+    if (toggleStripe.checked) drawStripe(recordCtx, recordCanvas.width);
+    drawText(recordCtx, recordCanvas.width);
+    if (toggleLogo.checked)   drawLogo(recordCtx, recordCanvas.width);
+    drawBadge(recordCtx, recordCanvas.width, t);
+    // NIET drawCrosshair() hier - alleen preview moet crosshair hebben
+  }, 1000 / 30);
+
+  setTimeout(() => {
+    clearInterval(frameInterval);
+    if (recorder.state !== 'inactive') recorder.stop();
+  }, dur * 1000);
 });
 
 setupCanvas();

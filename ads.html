@@ -240,7 +240,6 @@ textarea.text-input:focus { border-color: #e94560; }
 }
 
 /* ── MODE SELECTOR ── */
-#mode-selector { display:none; }
 .mode-btn-group { display:flex; gap:8px; }
 .mode-btn {
   flex:1; padding:9px 0;
@@ -254,15 +253,15 @@ textarea.text-input:focus { border-color: #e94560; }
 .mode-btn.active { border-color:#e94560; background:#e94560; color:#fff; }
 .mode-btn:hover:not(.active) { border-color:#e94560; color:#e94560; }
 
-/* ── ZOOM CARD ── */
-#zoom-card { display:none; }
+/* ── SECTION GROUPS ── */
+.section-group { display:flex; flex-direction:column; gap:18px; }
 </style>
 </head>
 <body>
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.2</span></h1>
+    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.3</span></h1>
   </div>
 
   <!-- Upload -->
@@ -280,7 +279,7 @@ textarea.text-input:focus { border-color: #e94560; }
   </div>
 
 
-  <!-- ① Exporttype (verschijnt na upload) -->
+  <!-- ① Exporttype — altijd zichtbaar -->
   <div id="mode-selector" class="card">
     <div class="section-title">Exporttype</div>
     <div class="mode-btn-group">
@@ -289,195 +288,205 @@ textarea.text-input:focus { border-color: #e94560; }
     </div>
   </div>
 
-  <!-- Uitsnede -->
-  <div class="card">
-    <div class="section-title">Uitsnede &amp; positie</div>
-    <div class="control-row">
-      <div class="control-label">
-        <span>Zoom</span>
-        <span class="value-badge" id="zoom-label">100%</span>
-      </div>
-      <input type="range" id="zoom-slider" min="50" max="300" value="100" step="1">
-    </div>
-    <p class="hint">Sleep de foto in het preview om te positioneren. Scroll om in te zoomen.</p>
-    <br>
-    <button id="reset-btn">Uitsnede resetten</button>
-  </div>
+  <!-- ② VIDEO sectie -->
+  <div id="video-section" class="section-group" style="display:none;">
 
-  <!-- Kleurfilters -->
-  <div class="card">
-    <div class="section-title">Kleurfilters</div>
-    <div class="control-row">
-      <div class="control-label"><span>Levendigheid</span><span class="value-badge" id="vibrance-label">+35</span></div>
-      <input type="range" id="vibrance-slider" min="0" max="100" value="35" step="1">
+    <!-- Embleem / Badge -->
+    <div class="card">
+      <div class="section-title">Embleem / Badge</div>
+      <div id="badge-upload-area">
+        <input type="file" id="badge-file-input" accept="image/*">
+        <div class="upload-icon">&#127942;</div>
+        <p><strong>Klik om te uploaden</strong><br>PNG met transparante achtergrond aanbevolen</p>
+      </div>
+      <div id="badge-controls" style="display:none;">
+        <div class="control-row">
+          <div class="control-label"><span>Positie X</span><span class="value-badge" id="badge-x-label">75%</span></div>
+          <input type="range" id="badge-pos-x" min="5" max="95" value="75" step="1">
+        </div>
+        <div class="control-row">
+          <div class="control-label"><span>Positie Y</span><span class="value-badge" id="badge-y-label">30%</span></div>
+          <input type="range" id="badge-pos-y" min="5" max="95" value="30" step="1">
+        </div>
+        <div class="control-row">
+          <div class="control-label"><span>Grootte</span><span class="value-badge" id="badge-size-label">100%</span></div>
+          <input type="range" id="badge-size-slider" min="20" max="250" value="100" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-label"><span>Animatie</span></div>
+          <select id="badge-anim-select" class="control-select">
+            <option value="none">Geen (statisch)</option>
+            <option value="blink">Knipperen</option>
+            <option value="flash">Flash</option>
+            <option value="pulse">Puls (groter/kleiner)</option>
+          </select>
+        </div>
+        <div class="control-row" id="badge-speed-row" style="display:none;">
+          <div class="control-label"><span>Snelheid</span><span class="value-badge" id="badge-speed-label">1.0&times;</span></div>
+          <input type="range" id="badge-speed-slider" min="1" max="20" value="10" step="1">
+        </div>
+      </div>
     </div>
-    <div class="control-row">
-      <div class="control-label"><span>Verzadiging</span><span class="value-badge" id="saturation-label">+20</span></div>
-      <input type="range" id="saturation-slider" min="-50" max="100" value="20" step="1">
-    </div>
-    <div class="control-row">
-      <div class="control-label"><span>Contrast</span><span class="value-badge" id="contrast-label">+10</span></div>
-      <input type="range" id="contrast-slider" min="-50" max="100" value="10" step="1">
-    </div>
-    <div class="control-row">
-      <div class="control-label"><span>Helderheid</span><span class="value-badge" id="brightness-label">0</span></div>
-      <input type="range" id="brightness-slider" min="-50" max="50" value="0" step="1">
-    </div>
-    <div class="control-row">
-      <div class="control-label"><span>Scherpte</span><span class="value-badge" id="sharpness-label">+20</span></div>
-      <input type="range" id="sharpness-slider" min="0" max="100" value="20" step="1">
-    </div>
-  </div>
 
-  <!-- Tekst -->
-  <div class="card">
-    <div class="section-title">Advertentietekst</div>
-    <div class="control-row">
-      <div class="control-label"><span>Tekst (wit, vetgedrukt)</span></div>
-      <textarea class="text-input" id="ad-text" rows="2" placeholder="Het ideale uitje voor ieder team!">Het ideale uitje voor ieder team!</textarea>
+    <!-- Zoom & Focus -->
+    <div class="card" id="zoom-card">
+      <div class="section-title">Zoom &amp; focus</div>
+      <div class="toggle-row">
+        <span class="toggle-label">Zoom animatie</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-zoom">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="zoom-controls" style="display:none; margin-top:12px;">
+        <div class="control-row">
+          <div class="control-label">
+            <span>Zoom naar X</span>
+            <span class="value-badge" id="zoom-x-label">50%</span>
+          </div>
+          <input type="range" id="zoom-x-slider" min="0" max="100" value="50" step="1">
+        </div>
+        <div class="control-row">
+          <div class="control-label">
+            <span>Zoom naar Y</span>
+            <span class="value-badge" id="zoom-y-label">50%</span>
+          </div>
+          <input type="range" id="zoom-y-slider" min="0" max="100" value="50" step="1">
+        </div>
+        <div class="control-row">
+          <div class="control-label">
+            <span>Duur</span>
+            <span class="value-badge" id="zoom-dur-label">2.0s</span>
+          </div>
+          <input type="range" id="zoom-dur-slider" min="5" max="50" value="20" step="1">
+        </div>
+        <div class="control-row">
+          <div class="control-label">
+            <span>Inzoomfactor</span>
+            <span class="value-badge" id="zoom-scale-label">2.0&#215;</span>
+          </div>
+          <input type="range" id="zoom-scale-slider" min="12" max="40" value="20" step="1">
+        </div>
+        <p class="hint">Het rode doelwit toont het zoompunt in de preview.</p>
+      </div>
     </div>
-    <div class="control-row">
-      <div class="control-label"><span>Lettertype</span></div>
-      <select id="font-select" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:7px;font-family:'Lexend Deca',sans-serif;font-size:0.78rem;background:#fff;color:#111827;cursor:pointer;outline:none;">
-        <option value="League Spartan" selected>League Spartan (standaard)</option>
-        <option value="Lexend Deca">Lexend Deca</option>
-      </select>
-    </div>
-    <div class="control-row">
-      <div class="control-label"><span>Tekstbreedte</span><span class="value-badge" id="text-width-label">57%</span></div>
-      <input type="range" id="text-width-slider" min="20" max="90" value="57" step="1">
-    </div>
-    <div class="control-row">
-      <div class="control-label"><span>Tekstgrootte</span><span class="value-badge" id="font-size-label">50</span></div>
-      <input type="range" id="font-size-slider" min="30" max="120" value="50" step="2">
-    </div>
-    <div class="control-row">
-      <div class="control-label"><span>Tekstpositie (verticaal)</span><span class="value-badge" id="text-y-label">82%</span></div>
-      <input type="range" id="text-y-slider" min="50" max="95" value="82" step="1">
-    </div>
-  </div>
 
-  <!-- Embleem / Badge -->
-  <div class="card">
-    <div class="section-title">Embleem / Badge</div>
-    <div id="badge-upload-area">
-      <input type="file" id="badge-file-input" accept="image/*">
-      <div class="upload-icon">&#127942;</div>
-      <p><strong>Klik om te uploaden</strong><br>PNG met transparante achtergrond aanbevolen</p>
+    <!-- Video exporteren -->
+    <div class="card" id="video-export-card">
+      <div class="section-title">Video exporteren</div>
+      <div class="control-row">
+        <div class="control-label"><span>Duur</span><span class="value-badge" id="duration-label">3s</span></div>
+        <input type="range" id="record-duration" min="1" max="15" value="3" step="1">
+      </div>
+      <button id="record-btn" disabled>⏺ Opnemen als WebM-video</button>
+      <p class="hint" style="margin-top:6px;">Activeer zoom of badge-animatie om op te nemen.</p>
     </div>
-    <div id="badge-controls" style="display:none;">
+
+  </div><!-- /video-section -->
+
+  <!-- ③ IMAGE sectie -->
+  <div id="image-section" class="section-group">
+
+    <!-- Uitsnede -->
+    <div class="card">
+      <div class="section-title">Uitsnede &amp; positie</div>
       <div class="control-row">
-        <div class="control-label"><span>Positie X</span><span class="value-badge" id="badge-x-label">75%</span></div>
-        <input type="range" id="badge-pos-x" min="5" max="95" value="75" step="1">
+        <div class="control-label">
+          <span>Zoom</span>
+          <span class="value-badge" id="zoom-label">100%</span>
+        </div>
+        <input type="range" id="zoom-slider" min="50" max="300" value="100" step="1">
+      </div>
+      <p class="hint">Sleep de foto in het preview om te positioneren. Scroll om in te zoomen.</p>
+      <br>
+      <button id="reset-btn">Uitsnede resetten</button>
+    </div>
+
+    <!-- Kleurfilters -->
+    <div class="card">
+      <div class="section-title">Kleurfilters</div>
+      <div class="control-row">
+        <div class="control-label"><span>Levendigheid</span><span class="value-badge" id="vibrance-label">+35</span></div>
+        <input type="range" id="vibrance-slider" min="0" max="100" value="35" step="1">
       </div>
       <div class="control-row">
-        <div class="control-label"><span>Positie Y</span><span class="value-badge" id="badge-y-label">30%</span></div>
-        <input type="range" id="badge-pos-y" min="5" max="95" value="30" step="1">
+        <div class="control-label"><span>Verzadiging</span><span class="value-badge" id="saturation-label">+20</span></div>
+        <input type="range" id="saturation-slider" min="-50" max="100" value="20" step="1">
       </div>
       <div class="control-row">
-        <div class="control-label"><span>Grootte</span><span class="value-badge" id="badge-size-label">100%</span></div>
-        <input type="range" id="badge-size-slider" min="20" max="250" value="100" step="5">
+        <div class="control-label"><span>Contrast</span><span class="value-badge" id="contrast-label">+10</span></div>
+        <input type="range" id="contrast-slider" min="-50" max="100" value="10" step="1">
       </div>
       <div class="control-row">
-        <div class="control-label"><span>Animatie</span></div>
-        <select id="badge-anim-select" class="control-select">
-          <option value="none">Geen (statisch)</option>
-          <option value="blink">Knipperen</option>
-          <option value="flash">Flash</option>
-          <option value="pulse">Puls (groter/kleiner)</option>
+        <div class="control-label"><span>Helderheid</span><span class="value-badge" id="brightness-label">0</span></div>
+        <input type="range" id="brightness-slider" min="-50" max="50" value="0" step="1">
+      </div>
+      <div class="control-row">
+        <div class="control-label"><span>Scherpte</span><span class="value-badge" id="sharpness-label">+20</span></div>
+        <input type="range" id="sharpness-slider" min="0" max="100" value="20" step="1">
+      </div>
+    </div>
+
+    <!-- Tekst -->
+    <div class="card">
+      <div class="section-title">Advertentietekst</div>
+      <div class="control-row">
+        <div class="control-label"><span>Tekst (wit, vetgedrukt)</span></div>
+        <textarea class="text-input" id="ad-text" rows="2" placeholder="Het ideale uitje voor ieder team!">Het ideale uitje voor ieder team!</textarea>
+      </div>
+      <div class="control-row">
+        <div class="control-label"><span>Lettertype</span></div>
+        <select id="font-select" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:7px;font-family:'Lexend Deca',sans-serif;font-size:0.78rem;background:#fff;color:#111827;cursor:pointer;outline:none;">
+          <option value="League Spartan" selected>League Spartan (standaard)</option>
+          <option value="Lexend Deca">Lexend Deca</option>
         </select>
       </div>
-      <div class="control-row" id="badge-speed-row" style="display:none;">
-        <div class="control-label"><span>Snelheid</span><span class="value-badge" id="badge-speed-label">1.0&times;</span></div>
-        <input type="range" id="badge-speed-slider" min="1" max="20" value="10" step="1">
-      </div>
-    </div>
-  </div>
-
-  <!-- Overlay -->
-  <div class="card">
-    <details class="overlay-details" open>
-      <summary>Overlay elementen</summary>
-      <div class="toggle-row">
-        <span class="toggle-label">Rode &amp; blauwe bogen</span>
-        <label class="toggle"><input type="checkbox" id="toggle-arcs" checked><span class="toggle-slider"></span></label>
-      </div>
-      <div class="toggle-row">
-        <span class="toggle-label">Zweem (wit/blauw gloed)</span>
-        <label class="toggle"><input type="checkbox" id="toggle-glow" checked><span class="toggle-slider"></span></label>
-      </div>
-      <div class="toggle-row">
-        <span class="toggle-label">Rode streep</span>
-        <label class="toggle"><input type="checkbox" id="toggle-stripe" checked><span class="toggle-slider"></span></label>
-      </div>
-      <div class="toggle-row">
-        <span class="toggle-label">ClashRooms logo</span>
-        <label class="toggle"><input type="checkbox" id="toggle-logo" checked><span class="toggle-slider"></span></label>
-      </div>
-      <div class="control-row" style="margin-top:10px;">
-        <div class="control-label"><span>Gloedsterkte</span><span class="value-badge" id="glow-label">80%</span></div>
-        <input type="range" id="glow-slider" min="0" max="100" value="80" step="1">
-      </div>
-    </details>
-  </div>
-
-
-  <!-- ② Zoom & Focus (verschijnt na upload) -->
-  <div class="card" id="zoom-card">
-    <div class="section-title">Zoom &amp; focus</div>
-    <div class="toggle-row">
-      <span class="toggle-label">Zoom animatie</span>
-      <label class="toggle">
-        <input type="checkbox" id="toggle-zoom">
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div id="zoom-controls" style="display:none; margin-top:12px;">
       <div class="control-row">
-        <div class="control-label">
-          <span>Zoom naar X</span>
-          <span class="value-badge" id="zoom-x-label">50%</span>
-        </div>
-        <input type="range" id="zoom-x-slider" min="0" max="100" value="50" step="1">
+        <div class="control-label"><span>Tekstbreedte</span><span class="value-badge" id="text-width-label">57%</span></div>
+        <input type="range" id="text-width-slider" min="20" max="90" value="57" step="1">
       </div>
       <div class="control-row">
-        <div class="control-label">
-          <span>Zoom naar Y</span>
-          <span class="value-badge" id="zoom-y-label">50%</span>
-        </div>
-        <input type="range" id="zoom-y-slider" min="0" max="100" value="50" step="1">
+        <div class="control-label"><span>Tekstgrootte</span><span class="value-badge" id="font-size-label">50</span></div>
+        <input type="range" id="font-size-slider" min="30" max="120" value="50" step="2">
       </div>
       <div class="control-row">
-        <div class="control-label">
-          <span>Duur</span>
-          <span class="value-badge" id="zoom-dur-label">2.0s</span>
-        </div>
-        <input type="range" id="zoom-dur-slider" min="5" max="50" value="20" step="1">
+        <div class="control-label"><span>Tekstpositie (verticaal)</span><span class="value-badge" id="text-y-label">82%</span></div>
+        <input type="range" id="text-y-slider" min="50" max="95" value="82" step="1">
       </div>
-      <div class="control-row">
-        <div class="control-label">
-          <span>Inzoomfactor</span>
-          <span class="value-badge" id="zoom-scale-label">2.0&#215;</span>
+    </div>
+
+    <!-- Overlay -->
+    <div class="card">
+      <details class="overlay-details" open>
+        <summary>Overlay elementen</summary>
+        <div class="toggle-row">
+          <span class="toggle-label">Rode &amp; blauwe bogen</span>
+          <label class="toggle"><input type="checkbox" id="toggle-arcs" checked><span class="toggle-slider"></span></label>
         </div>
-        <input type="range" id="zoom-scale-slider" min="12" max="40" value="20" step="1">
-      </div>
-      <p class="hint">Het rode doelwit toont het zoompunt (alleen preview).</p>
+        <div class="toggle-row">
+          <span class="toggle-label">Zweem (wit/blauw gloed)</span>
+          <label class="toggle"><input type="checkbox" id="toggle-glow" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Rode streep</span>
+          <label class="toggle"><input type="checkbox" id="toggle-stripe" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">ClashRooms logo</span>
+          <label class="toggle"><input type="checkbox" id="toggle-logo" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="control-row" style="margin-top:10px;">
+          <div class="control-label"><span>Gloedsterkte</span><span class="value-badge" id="glow-label">80%</span></div>
+          <input type="range" id="glow-slider" min="0" max="100" value="80" step="1">
+        </div>
+      </details>
     </div>
-  </div>
 
-  <!-- Video exporteren -->
-  <div class="card" id="video-export-card" style="display:none;">
-    <div class="section-title">Video exporteren</div>
-    <div class="control-row">
-      <div class="control-label"><span>Duur</span><span class="value-badge" id="duration-label">3s</span></div>
-      <input type="range" id="record-duration" min="1" max="15" value="3" step="1">
-    </div>
-    <button id="record-btn" disabled>⏺ Opnemen als WebM-video</button>
-    <p class="hint" style="margin-top:6px;">Geschikt voor Google Ads video-campagnes en Social Media Stories. Activeer een animatie om te beginnen.</p>
-  </div>
+    <!-- Download -->
+    <button id="download-btn" disabled>&#11015; Downloaden (1080&times;1080 PNG)</button>
 
-  <!-- Download -->
-  <button id="download-btn" disabled>&#11015; Downloaden (1080&times;1080 PNG)</button>
+  </div><!-- /image-section -->
+
 </div>
 
 <!-- Canvas -->
@@ -593,9 +602,7 @@ function loadPhoto(file) {
     downloadBtn.disabled = false;
     statusDot.classList.add('loaded');
     statusText.textContent = file.name;
-    modeSelector.style.display = 'block';
-    zoomCard.style.display = 'block';
-    setMode(false);
+    setMode(isVideoMode); // herstel huidige mode na upload
     render();
   };
   img.src = url;
@@ -607,8 +614,8 @@ function setMode(video) {
   isVideoMode = video;
   modeImageBtn.classList.toggle('active', !video);
   modeVideoBtn.classList.toggle('active', video);
-  videoExportCard.style.display = video ? '' : 'none';
-  downloadBtn.style.display     = video ? 'none' : '';
+  document.getElementById('video-section').style.display = video ? 'flex' : 'none';
+  document.getElementById('image-section').style.display = video ? 'none' : 'flex';
   // Record alleen enabled als video-mode én er iets te animeren is
   const canRecord = video && (isZoomEnabled || (badgeImg !== null && badgeAnimSelect.value !== 'none'));
   recordBtn.disabled = !canRecord;
@@ -1164,6 +1171,9 @@ recordBtn.addEventListener('click', () => {
   if (!photoImg) return;
   const dur = parseInt(recordDuration.value) || 3;
 
+  // Herstart animatie vanaf t=0 zodat zoom vanaf begin afspeelt
+  animStartTime = performance.now();
+
   const stream   = canvas.captureStream(30);
   const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
     ? 'video/webm;codecs=vp9' : 'video/webm';
@@ -1193,6 +1203,7 @@ setupCanvas();
 window.addEventListener('resize', () => { setupCanvas(); render(); });
 initArcs();
 loadLogo();
+setMode(false); // Image-modus als standaard bij laden pagina
 
 // ── Mode-knoppen ──
 modeImageBtn.addEventListener('click', () => setMode(false));

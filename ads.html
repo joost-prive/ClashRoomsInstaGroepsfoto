@@ -261,7 +261,7 @@ textarea.text-input:focus { border-color: #e94560; }
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.3</span></h1>
+    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v2.4</span></h1>
   </div>
 
   <!-- Upload -->
@@ -792,9 +792,13 @@ function drawPhoto(oc, S, _zx, _zy, _zs) {
     parseInt(contrastSlider.value)  !== 0 ||
     parseInt(brightnessSlider.value)!== 0 ||
     parseInt(sharpnessSlider.value) !== 0;
-  const sx = photoX*(S/OUTPUT_SIZE), sy = photoY*(S/OUTPUT_SIZE);
-  const sw = photoImg.width*photoScale*(S/OUTPUT_SIZE);
-  const sh = photoImg.height*photoScale*(S/OUTPUT_SIZE);
+  // Gebruik zoom-coördinaten als die meegegeven zijn, anders de globale waarden
+  const px = (_zx !== undefined ? _zx : photoX);
+  const py = (_zy !== undefined ? _zy : photoY);
+  const ps = (_zs !== undefined ? _zs : photoScale);
+  const sx = px*(S/OUTPUT_SIZE), sy = py*(S/OUTPUT_SIZE);
+  const sw = photoImg.width*ps*(S/OUTPUT_SIZE);
+  const sh = photoImg.height*ps*(S/OUTPUT_SIZE);
   if (needsAdjust) {
     const tmp = document.createElement('canvas'); tmp.width = S; tmp.height = S;
     const tc = tmp.getContext('2d');

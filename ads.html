@@ -244,7 +244,7 @@ textarea.text-input:focus { border-color: #e94560; }
 
 <div id="sidebar">
   <div>
-    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.3</span></h1>
+    <h1>ClashRooms <span>Ads Creator</span> <span style="font-size:0.55rem;font-weight:400;color:#9ca3af;vertical-align:middle;">v1.4</span></h1>
   </div>
 
   <!-- Upload -->
@@ -456,7 +456,7 @@ textarea.text-input:focus { border-color: #e94560; }
 
 <script>
 const OUTPUT_SIZE = 1080;
-const PREVIEW_MAX = 680;
+const PREVIEW_MAX = 1000;
 
 // Arc paths (same SVG shapes as booking photo editor)
 const ARC_RED_PATH  = 'm206.78,141.23c-4.4-16.42-14.93-30.15-29.65-38.65L0,0v3.51l175.63,101.67c14.03,8.1,24.06,21.18,28.25,36.83,4.19,15.65,2.04,31.99-6.06,46.02L0,530.65v6L200.42,189.52c8.5-14.72,10.76-31.87,6.36-48.29h0Z';
@@ -559,7 +559,9 @@ function setupCanvas() {
   const available = Math.min(area.clientWidth - 40, area.clientHeight - 40, PREVIEW_MAX);
   previewScale = available / OUTPUT_SIZE;
   const dim = Math.round(OUTPUT_SIZE * previewScale);
-  canvas.width = dim; canvas.height = dim;
+  // Internal canvas: always full resolution for sharp rendering
+  canvas.width = OUTPUT_SIZE; canvas.height = OUTPUT_SIZE;
+  // Display size: scaled down via CSS for screen space
   canvas.style.width = dim + 'px'; canvas.style.height = dim + 'px';
 }
 
@@ -770,6 +772,10 @@ function applySharpening(imageData, strength) {
 }
 
 function drawPhoto(oc, S) {
+  // Enable high-quality image smoothing
+  oc.imageSmoothingEnabled = true;
+  oc.imageSmoothingQuality = 'high';
+
   const needsAdjust =
     parseInt(vibranceSlider.value)  !== 0 ||
     parseInt(saturationSlider.value)!== 0 ||
@@ -782,7 +788,23 @@ function drawPhoto(oc, S) {
   if (needsAdjust) {
     const tmp = document.createElement('canvas'); tmp.width = S; tmp.height = S;
     const tc = tmp.getContext('2d');
-    tc.drawImage(photoImg, sx, sy, sw, sh);
+    tc.imageSmoothingEnabled = true;
+    tc.imageSmoothingQuality = 'high';
+
+    // Progressive scaling for large images
+    if (photoImg.width > 2000 && sw / photoImg.width < 0.5) {
+      const mid = document.createElement('canvas');
+      mid.width = Math.ceil(photoImg.width * photoScale * 0.75 * (S / OUTPUT_SIZE));
+      mid.height = Math.ceil(photoImg.height * photoScale * 0.75 * (S / OUTPUT_SIZE));
+      const mc = mid.getContext('2d');
+      mc.imageSmoothingEnabled = true;
+      mc.imageSmoothingQuality = 'high';
+      mc.drawImage(photoImg, sx, sy, sw, sh, 0, 0, mid.width, mid.height);
+      tc.drawImage(mid, 0, 0, mid.width, mid.height, 0, 0, S, S);
+    } else {
+      tc.drawImage(photoImg, sx, sy, sw, sh);
+    }
+
     let id = tc.getImageData(0,0,S,S);
     applyColorAdjustments(id,
       parseInt(vibranceSlider.value), parseInt(saturationSlider.value),

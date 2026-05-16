@@ -769,7 +769,7 @@ function applySharpening(imageData, strength) {
   return imageData;
 }
 
-function drawPhoto(oc, S) {
+function drawPhoto(oc, S, _zx = null, _zy = null, _zs = null) {
   const needsAdjust =
     parseInt(vibranceSlider.value)  !== 0 ||
     parseInt(saturationSlider.value)!== 0 ||
@@ -946,17 +946,60 @@ function drawLogo(oc, S) {
   oc.drawImage(logoImg, x, y, logoW, logoH);
 }
 
+
+// ── Zoom berekening ──
+function calcZoom(t) {
+  if (!isZoomEnabled || !photoImg) return null;
+  const progress = Math.min(t / zoomDurSec, 1);
+  const eased = progress < 0.5
+    ? 4 * progress * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+  const startScale = photoScale;
+  const endScale   = startScale * zoomMaxScale;
+  const sc = startScale + (endScale - startScale) * eased;
+  const focusX = (zoomCenterX / 100) * OUTPUT_SIZE;
+  const focusY = (zoomCenterY / 100) * OUTPUT_SIZE;
+  const x = focusX - (focusX - photoX) * (sc / startScale);
+  const y = focusY - (focusY - photoY) * (sc / startScale);
+  return { x, y, scale: sc };
+}
+
+// ── Crosshair (alleen preview) ──
+function drawCrosshair(oc, S) {
+  if (!isZoomEnabled) return;
+  const cx  = (zoomCenterX / 100) * S;
+  const cy  = (zoomCenterY / 100) * S;
+  const r   = S * 0.042;
+  const arm = S * 0.065;
+  oc.save();
+  oc.strokeStyle = '#ff2255';
+  oc.lineWidth   = Math.max(1.5, S * 0.0025);
+  oc.setLineDash([]);
+  oc.beginPath(); oc.arc(cx, cy, r, 0, Math.PI * 2); oc.stroke();
+  oc.beginPath();
+  oc.moveTo(cx - r - arm, cy); oc.lineTo(cx - r, cy);
+  oc.moveTo(cx + r, cy);       oc.lineTo(cx + r + arm, cy);
+  oc.moveTo(cx, cy - r - arm); oc.lineTo(cx, cy - r);
+  oc.moveTo(cx, cy + r);       oc.lineTo(cx, cy + r + arm);
+  oc.stroke();
+  oc.fillStyle = '#ff2255';
+  oc.beginPath(); oc.arc(cx, cy, S * 0.006, 0, Math.PI * 2); oc.fill();
+  oc.restore();
+}
+
 function render(t = 0) {
   if (!photoImg) return;
   const S = canvas.width;
   ctx.clearRect(0, 0, S, S);
-  drawPhoto(ctx, S);
+  const z = calcZoom(t);
+  drawPhoto(ctx, S, z ? z.x : null, z ? z.y : null, z ? z.scale : null);
   if (toggleArcs.checked)   drawArcs(ctx, S);
   if (toggleGlow.checked)   drawGlow(ctx, S);
   if (toggleStripe.checked) drawStripe(ctx, S);
   drawText(ctx, S);
   if (toggleLogo.checked)   drawLogo(ctx, S);
   drawBadge(ctx, S, t);
+  drawCrosshair(ctx, S);
 }
 
 function renderFull(t = 0) {
@@ -964,7 +1007,8 @@ function renderFull(t = 0) {
   const oc = document.createElement('canvas');
   oc.width = S; oc.height = S;
   const c = oc.getContext('2d');
-  drawPhoto(c, S);
+  const zf = calcZoom(t);
+  drawPhoto(c, S, zf ? zf.x : null, zf ? zf.y : null, zf ? zf.scale : null);
   if (toggleArcs.checked)   drawArcs(c, S);
   if (toggleGlow.checked)   drawGlow(c, S);
   if (toggleStripe.checked) drawStripe(c, S);
@@ -1053,7 +1097,7 @@ function currentAnimTime() {
 
 // ── Animatielus ──
 function checkAnimLoop() {
-  const needsAnim = badgeImg !== null && badgeAnimSelect.value !== 'none';
+  const needsAnim = (badgeImg !== null && badgeAnimSelect.value !== 'none') || isZoomEnabled;
   if (needsAnim && animFrameId === null) {
     animStartTime = performance.now();
     function loop(ts) {
@@ -1062,11 +1106,11 @@ function checkAnimLoop() {
       animFrameId = requestAnimationFrame(loop);
     }
     animFrameId = requestAnimationFrame(loop);
-    recordBtn.disabled = false;
+    if (isVideoMode) recordBtn.disabled = false;
   } else if (!needsAnim && animFrameId !== null) {
     cancelAnimationFrame(animFrameId);
     animFrameId = null; animStartTime = null;
-    recordBtn.disabled = true;
+    if (isVideoMode) recordBtn.disabled = true;
     render(0);
   }
 }

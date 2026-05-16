@@ -613,7 +613,6 @@ function drawPhoto(oc, S) {
   oc.imageSmoothingEnabled = true;
   oc.imageSmoothingQuality = 'high';
 
-  // Photo fills the full S×S canvas (cover behavior)
   const needsAdjust = parseInt(vibranceSlider.value) !== 0 ||
                       parseInt(saturationSlider.value) !== 0 ||
                       parseInt(contrastSlider.value) !== 0 ||
@@ -626,29 +625,9 @@ function drawPhoto(oc, S) {
     tc.imageSmoothingEnabled = true;
     tc.imageSmoothingQuality = 'high';
 
-    // Progressive scaling: if original is much larger, scale in steps
-    const srcW = photoImg.width * photoScale;
-    const srcH = photoImg.height * photoScale;
-    const scale = S / Math.max(srcW, srcH);
+    // Draw full image at correct scale and position
+    tc.drawImage(photoImg, photoX, photoY, photoImg.width * photoScale, photoImg.height * photoScale);
 
-    if (scale < 0.5 && photoImg.width > 2000) {
-      // Intermediate step for large downscales
-      const mid = document.createElement('canvas');
-      mid.width = Math.ceil(srcW * scale * 0.75);
-      mid.height = Math.ceil(srcH * scale * 0.75);
-      const mc = mid.getContext('2d');
-      mc.imageSmoothingEnabled = true;
-      mc.imageSmoothingQuality = 'high';
-      mc.drawImage(photoImg, photoX, photoY, srcW, srcH, 0, 0, mid.width, mid.height);
-      tc.drawImage(mid, 0, 0, mid.width, mid.height, 0, 0, S, S);
-    } else {
-      tc.drawImage(photoImg,
-        photoX * (S / OUTPUT_SIZE),
-        photoY * (S / OUTPUT_SIZE),
-        photoImg.width * photoScale * (S / OUTPUT_SIZE),
-        photoImg.height * photoScale * (S / OUTPUT_SIZE)
-      );
-    }
     let id = tc.getImageData(0, 0, S, S);
     applyColorAdjustments(
       id,
@@ -662,10 +641,10 @@ function drawPhoto(oc, S) {
     oc.drawImage(tmp, 0, 0);
   } else {
     oc.drawImage(photoImg,
-      photoX * (S / OUTPUT_SIZE),
-      photoY * (S / OUTPUT_SIZE),
-      photoImg.width * photoScale * (S / OUTPUT_SIZE),
-      photoImg.height * photoScale * (S / OUTPUT_SIZE)
+      photoX,
+      photoY,
+      photoImg.width * photoScale,
+      photoImg.height * photoScale
     );
   }
 }

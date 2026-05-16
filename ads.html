@@ -787,28 +787,15 @@ function drawPhoto(oc, S) {
     parseInt(contrastSlider.value)  !== 0 ||
     parseInt(brightnessSlider.value)!== 0 ||
     parseInt(sharpnessSlider.value) !== 0;
-  const sx = photoX*(S/OUTPUT_SIZE), sy = photoY*(S/OUTPUT_SIZE);
-  const sw = photoImg.width*photoScale*(S/OUTPUT_SIZE);
-  const sh = photoImg.height*photoScale*(S/OUTPUT_SIZE);
+
   if (needsAdjust) {
     const tmp = document.createElement('canvas'); tmp.width = S; tmp.height = S;
     const tc = tmp.getContext('2d');
     tc.imageSmoothingEnabled = true;
     tc.imageSmoothingQuality = 'high';
 
-    // Progressive scaling for large images
-    if (photoImg.width > 2000 && sw / photoImg.width < 0.5) {
-      const mid = document.createElement('canvas');
-      mid.width = Math.ceil(photoImg.width * photoScale * 0.75 * (S / OUTPUT_SIZE));
-      mid.height = Math.ceil(photoImg.height * photoScale * 0.75 * (S / OUTPUT_SIZE));
-      const mc = mid.getContext('2d');
-      mc.imageSmoothingEnabled = true;
-      mc.imageSmoothingQuality = 'high';
-      mc.drawImage(photoImg, sx, sy, sw, sh, 0, 0, mid.width, mid.height);
-      tc.drawImage(mid, 0, 0, mid.width, mid.height, 0, 0, S, S);
-    } else {
-      tc.drawImage(photoImg, sx, sy, sw, sh);
-    }
+    // Draw full image at correct scale and position
+    tc.drawImage(photoImg, photoX, photoY, photoImg.width * photoScale, photoImg.height * photoScale);
 
     let id = tc.getImageData(0,0,S,S);
     applyColorAdjustments(id,
@@ -818,7 +805,7 @@ function drawPhoto(oc, S) {
     tc.putImageData(id,0,0);
     oc.drawImage(tmp,0,0);
   } else {
-    oc.drawImage(photoImg, sx, sy, sw, sh);
+    oc.drawImage(photoImg, photoX, photoY, photoImg.width * photoScale, photoImg.height * photoScale);
   }
 }
 

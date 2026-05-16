@@ -429,8 +429,10 @@ function setupCanvas() {
   const available = Math.min(area.clientWidth - 40, area.clientHeight - 40, PREVIEW_MAX);
   previewScale = available / OUTPUT_SIZE;
   const dim = Math.round(OUTPUT_SIZE * previewScale);
-  canvas.width = dim;
-  canvas.height = dim;
+  // Internal canvas: always full resolution (1080px) for sharp rendering
+  canvas.width = OUTPUT_SIZE;
+  canvas.height = OUTPUT_SIZE;
+  // Display size: scaled down via CSS for screen space
   canvas.style.width = dim + 'px';
   canvas.style.height = dim + 'px';
 }

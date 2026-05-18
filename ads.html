@@ -529,9 +529,7 @@ let logoImg = null;
 let arcRedPath2D = null;
 let arcBluePath2D = null;
 let isRecording = false;
-let cachedFilteredImageData = null;
-let cachedFilterSettings = null;
-let cachedFilteredDims = null;
+let lastAppliedFilters = null;
 
 // DOM
 const modeSelector    = document.getElementById('mode-selector');
@@ -818,10 +816,6 @@ function drawPhoto(oc, S, _zx, _zy, _zs) {
     return;
   }
 
-  // Cache key based only on filter settings
-  const filterKey = `${vibrance}|${saturation}|${contrast}|${brightness}|${sharpness}`;
-  const cacheValid = cachedFilterSettings === filterKey && cachedFilteredImageData && cachedFilteredDims === S;
-
   const tmp = document.createElement('canvas');
   tmp.width = S;
   tmp.height = S;
@@ -829,23 +823,11 @@ function drawPhoto(oc, S, _zx, _zy, _zs) {
   tc.imageSmoothingEnabled = true;
   tc.imageSmoothingQuality = 'high';
 
-  // Draw photo with zoom
   tc.drawImage(photoImg, px, py, photoImg.width * ps, photoImg.height * ps);
 
   let id = tc.getImageData(0, 0, S, S);
-
-  if (cacheValid) {
-    // Reuse cached filtered data
-    id.data.set(cachedFilteredImageData);
-  } else {
-    // Apply and cache filters
-    applyColorAdjustments(id, vibrance, saturation, contrast, brightness);
-    applySharpening(id, sharpness);
-    cachedFilteredImageData = new Uint8ClampedArray(id.data);
-    cachedFilterSettings = filterKey;
-    cachedFilteredDims = S;
-  }
-
+  applyColorAdjustments(id, vibrance, saturation, contrast, brightness);
+  applySharpening(id, sharpness);
   tc.putImageData(id, 0, 0);
   oc.drawImage(tmp, 0, 0);
 }

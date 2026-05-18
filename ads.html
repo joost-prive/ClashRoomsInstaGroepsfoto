@@ -1202,12 +1202,26 @@ recordBtn.addEventListener('click', () => {
   let mimeType = 'video/webm';
   let filename = 'clashrooms-ad.webm';
 
-  // Probeer MP4 eerst (het beste voor WhatsApp)
-  if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264')) {
-    mimeType = 'video/mp4;codecs=h264';
-    filename = 'clashrooms-ad.mp4';
-  } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-    mimeType = 'video/webm;codecs=vp9';
+  // Probeer MP4 in verschillende codec-varianten (best voor WhatsApp)
+  const mp4Variants = [
+    'video/mp4;codecs=h264',
+    'video/mp4;codecs=avc1',
+    'video/mp4'
+  ];
+
+  for (const variant of mp4Variants) {
+    if (MediaRecorder.isTypeSupported(variant)) {
+      mimeType = variant;
+      filename = 'clashrooms-ad.mp4';
+      break;
+    }
+  }
+
+  // Fallback naar WebM
+  if (mimeType === 'video/webm') {
+    if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+      mimeType = 'video/webm;codecs=vp9';
+    }
   }
 
   const recorder = new MediaRecorder(stream, { mimeType });

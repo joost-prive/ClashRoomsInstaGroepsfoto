@@ -528,6 +528,7 @@ let previewScale = 1;
 let logoImg = null;
 let arcRedPath2D = null;
 let arcBluePath2D = null;
+let isRecording = false;
 
 // DOM
 const modeSelector    = document.getElementById('mode-selector');
@@ -1038,7 +1039,7 @@ function render(t = 0) {
   drawText(ctx, S);
   if (toggleLogo.checked)   drawLogo(ctx, S);
   drawBadge(ctx, S, t);
-  drawCrosshair(ctx, S);  // preview only
+  if (!isRecording) drawCrosshair(ctx, S);  // preview only, niet in recording
 }
 
 function renderFull(t = 0) {
@@ -1192,13 +1193,7 @@ recordBtn.addEventListener('click', () => {
   // Herstart animatie vanaf t=0 zodat zoom vanaf begin afspeelt
   animStartTime = performance.now();
 
-  // Maak offscreen canvas voor video-opname zonder crosshair
-  const recordCanvas = document.createElement('canvas');
-  recordCanvas.width = canvas.width;
-  recordCanvas.height = canvas.height;
-  const recordCtx = recordCanvas.getContext('2d');
-
-  const stream   = recordCanvas.captureStream(30);
+  const stream   = canvas.captureStream(30);
   let mimeType = 'video/webm';
   let filename = 'clashrooms-ad.webm';
 
@@ -1229,6 +1224,7 @@ recordBtn.addEventListener('click', () => {
 
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   recorder.onstop = () => {
+    isRecording = false;
     const blob = new Blob(chunks, { type: mimeType });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -1239,31 +1235,12 @@ recordBtn.addEventListener('click', () => {
     recordBtn.disabled = false;
   };
 
+  isRecording = true;
   recordBtn.textContent = 'Bezig... (' + dur + 's)';
   recordBtn.classList.add('recording');
   recordBtn.disabled = true;
   recorder.start();
-
-  // Render frames naar offscreen canvas
-  const frameInterval = setInterval(() => {
-    const elapsed = performance.now() - animStartTime;
-    const t = (elapsed / 1000) % 10000;
-    const z = calcZoom(t);
-    recordCtx.clearRect(0, 0, recordCanvas.width, recordCanvas.height);
-    drawPhoto(recordCtx, recordCanvas.width, z.x, z.y, z.scale);
-    if (toggleArcs.checked)   drawArcs(recordCtx, recordCanvas.width);
-    if (toggleGlow.checked)   drawGlow(recordCtx, recordCanvas.width);
-    if (toggleStripe.checked) drawStripe(recordCtx, recordCanvas.width);
-    drawText(recordCtx, recordCanvas.width);
-    if (toggleLogo.checked)   drawLogo(recordCtx, recordCanvas.width);
-    drawBadge(recordCtx, recordCanvas.width, t);
-    // NIET drawCrosshair() hier - alleen preview moet crosshair hebben
-  }, 1000 / 30);
-
-  setTimeout(() => {
-    clearInterval(frameInterval);
-    if (recorder.state !== 'inactive') recorder.stop();
-  }, dur * 1000);
+  setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, dur * 1000);
 });
 
 setupCanvas();

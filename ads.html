@@ -817,30 +817,29 @@ function drawPhoto(oc, S, _zx, _zy, _zs) {
     return;
   }
 
-  // Check cache
+  // Check cache - only based on filter settings, not zoom
   const filterKey = `${vibrance}|${saturation}|${contrast}|${brightness}|${sharpness}`;
-  if (cachedFilterSettings === filterKey && cachedFilteredImage) {
-    oc.drawImage(cachedFilteredImage, 0, 0);
-    return;
+  if (cachedFilterSettings !== filterKey || !cachedFilteredImage) {
+    // Rebuild cache with full original image (no zoom)
+    const tmp = document.createElement('canvas');
+    tmp.width = photoImg.width;
+    tmp.height = photoImg.height;
+    const tc = tmp.getContext('2d');
+    tc.imageSmoothingEnabled = true;
+    tc.imageSmoothingQuality = 'high';
+    tc.drawImage(photoImg, 0, 0);
+
+    let id = tc.getImageData(0, 0, photoImg.width, photoImg.height);
+    applyColorAdjustments(id, vibrance, saturation, contrast, brightness);
+    applySharpening(id, sharpness);
+    tc.putImageData(id, 0, 0);
+
+    cachedFilteredImage = tmp;
+    cachedFilterSettings = filterKey;
   }
 
-  // Rebuild cache
-  const tmp = document.createElement('canvas');
-  tmp.width = S; tmp.height = S;
-  const tc = tmp.getContext('2d');
-  tc.imageSmoothingEnabled = true;
-  tc.imageSmoothingQuality = 'high';
-  tc.drawImage(photoImg, px, py, photoImg.width * ps, photoImg.height * ps);
-
-  let id = tc.getImageData(0,0,S,S);
-  applyColorAdjustments(id, vibrance, saturation, contrast, brightness);
-  applySharpening(id, sharpness);
-  tc.putImageData(id,0,0);
-
-  cachedFilteredImage = tmp;
-  cachedFilterSettings = filterKey;
-
-  oc.drawImage(tmp, 0, 0);
+  // Draw cached filtered image with zoom applied
+  oc.drawImage(cachedFilteredImage, px, py, cachedFilteredImage.width * ps, cachedFilteredImage.height * ps);
 }
 
 function drawArcs(oc, S) {

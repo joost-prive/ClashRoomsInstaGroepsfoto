@@ -529,6 +529,8 @@ let logoImg = null;
 let arcRedPath2D = null;
 let arcBluePath2D = null;
 let isRecording = false;
+let cachedFilteredImage = null;
+let cachedFilterSettings = null;
 
 // DOM
 const modeSelector    = document.getElementById('mode-selector');
@@ -795,39 +797,50 @@ function applySharpening(imageData, strength) {
 }
 
 function drawPhoto(oc, S, _zx, _zy, _zs) {
-  // Enable high-quality image smoothing
   oc.imageSmoothingEnabled = true;
   oc.imageSmoothingQuality = 'high';
 
-  const needsAdjust =
-    parseInt(vibranceSlider.value)  !== 0 ||
-    parseInt(saturationSlider.value)!== 0 ||
-    parseInt(contrastSlider.value)  !== 0 ||
-    parseInt(brightnessSlider.value)!== 0 ||
-    parseInt(sharpnessSlider.value) !== 0;
-  // Gebruik zoom-coördinaten als die meegegeven zijn, anders de globale waarden
+  const vibrance = parseInt(vibranceSlider.value);
+  const saturation = parseInt(saturationSlider.value);
+  const contrast = parseInt(contrastSlider.value);
+  const brightness = parseInt(brightnessSlider.value);
+  const sharpness = parseInt(sharpnessSlider.value);
+
   const px = (_zx !== undefined ? _zx : photoX);
   const py = (_zy !== undefined ? _zy : photoY);
   const ps = (_zs !== undefined ? _zs : photoScale);
-  if (needsAdjust) {
-    const tmp = document.createElement('canvas'); tmp.width = S; tmp.height = S;
-    const tc = tmp.getContext('2d');
-    tc.imageSmoothingEnabled = true;
-    tc.imageSmoothingQuality = 'high';
 
-    // Draw full image at correct scale and position
-    tc.drawImage(photoImg, px, py, photoImg.width * ps, photoImg.height * ps);
+  const needsAdjust = vibrance !== 0 || saturation !== 0 || contrast !== 0 || brightness !== 0 || sharpness !== 0;
 
-    let id = tc.getImageData(0,0,S,S);
-    applyColorAdjustments(id,
-      parseInt(vibranceSlider.value), parseInt(saturationSlider.value),
-      parseInt(contrastSlider.value), parseInt(brightnessSlider.value));
-    applySharpening(id, parseInt(sharpnessSlider.value));
-    tc.putImageData(id,0,0);
-    oc.drawImage(tmp,0,0);
-  } else {
+  if (!needsAdjust) {
     oc.drawImage(photoImg, px, py, photoImg.width * ps, photoImg.height * ps);
+    return;
   }
+
+  // Check cache
+  const filterKey = `${vibrance}|${saturation}|${contrast}|${brightness}|${sharpness}`;
+  if (cachedFilterSettings === filterKey && cachedFilteredImage) {
+    oc.drawImage(cachedFilteredImage, 0, 0);
+    return;
+  }
+
+  // Rebuild cache
+  const tmp = document.createElement('canvas');
+  tmp.width = S; tmp.height = S;
+  const tc = tmp.getContext('2d');
+  tc.imageSmoothingEnabled = true;
+  tc.imageSmoothingQuality = 'high';
+  tc.drawImage(photoImg, px, py, photoImg.width * ps, photoImg.height * ps);
+
+  let id = tc.getImageData(0,0,S,S);
+  applyColorAdjustments(id, vibrance, saturation, contrast, brightness);
+  applySharpening(id, sharpness);
+  tc.putImageData(id,0,0);
+
+  cachedFilteredImage = tmp;
+  cachedFilterSettings = filterKey;
+
+  oc.drawImage(tmp, 0, 0);
 }
 
 function drawArcs(oc, S) {
@@ -1236,6 +1249,7 @@ recordBtn.addEventListener('click', () => {
   };
 
   isRecording = true;
+  cachedFilterSettings = null; // Clear cache for fresh render
   recordBtn.textContent = 'Bezig... (' + dur + 's)';
   recordBtn.classList.add('recording');
   recordBtn.disabled = true;

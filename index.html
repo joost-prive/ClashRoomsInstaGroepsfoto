@@ -346,7 +346,13 @@ const ARC_VB_H = 536.66;  // SVG viewBox height
 // Scale so arc height = 80% of canvas
 const ARC_SCALE_FACTOR = 0.80;
 // How many px of the arc extend off-screen on each side
-const ARC_OFFSCREEN_FACTOR = 0.09;  // 9% of canvas
+const ARC_OFFSCREEN_FACTOR = 0.15;  // 15% of canvas — arcs zitten verder naar buiten
+// Verticale offset blauwe boog (omlaag)
+// 0.10 (symmetrisch) + 100px extra → 208/1080
+const ARC_BLUE_Y_OFFSET_FACTOR = 208 / 1080;
+// Offset witte gloed (omlaag + naar rechts)
+const GLOW_Y_OFFSET_FACTOR = 80 / 1080;
+const GLOW_X_OFFSET_FACTOR = 30 / 1080;
 
 // State
 let photoImg = null;
@@ -645,6 +651,8 @@ function drawArcs(oc, S) {
   const arcScale = arcH / ARC_VB_H;              // scale factor for SVG paths
   const arcW = ARC_VB_W * arcScale;              // arc rendered width
   const offscreen = S * ARC_OFFSCREEN_FACTOR;    // pixels that go off-screen
+  // Stroke van 2 canvas-pixels → in path-space delen door arcScale
+  const strokeW = 2 / arcScale;
 
   // Red arc — LEFT side
   // The path tip points RIGHT, so place the left edge off-screen
@@ -653,24 +661,33 @@ function drawArcs(oc, S) {
   oc.scale(arcScale, arcScale);
   oc.fillStyle = '#df1550';
   oc.fill(arcRedPath2D);
+  oc.strokeStyle = '#df1550';
+  oc.lineWidth = strokeW;
+  oc.stroke(arcRedPath2D);
   oc.restore();
 
   // Blue arc — RIGHT side
   // The path tip points LEFT, mirror position on right edge
+  // Verticaal naar beneden verschoven t.o.v. de rode boog
   oc.save();
-  oc.translate(S - arcW + offscreen, 0);
+  oc.translate(S - arcW + offscreen, S * ARC_BLUE_Y_OFFSET_FACTOR);
   oc.scale(arcScale, arcScale);
   oc.fillStyle = '#193dca';
   oc.fill(arcBluePath2D);
+  oc.strokeStyle = '#193dca';
+  oc.lineWidth = strokeW;
+  oc.stroke(arcBluePath2D);
   oc.restore();
 }
 
 // ── Draw white glow (bottom-right corner) ──
 function drawGlow(oc, S) {
   const strength = parseInt(glowSlider.value) / 100;
+  const cx = S + S * GLOW_X_OFFSET_FACTOR;  // gloed-center 30px naar rechts
+  const cy = S + S * GLOW_Y_OFFSET_FACTOR;  // gloed-center 80px naar beneden
   // Layer 1: large soft glow
   const r1 = S * 0.70;
-  const g1 = oc.createRadialGradient(S, S, 0, S, S, r1);
+  const g1 = oc.createRadialGradient(cx, cy, 0, cx, cy, r1);
   g1.addColorStop(0,    `rgba(255,255,255,${clamp(1.00 * strength)})`);
   g1.addColorStop(0.12, `rgba(255,255,255,${clamp(0.98 * strength)})`);
   g1.addColorStop(0.30, `rgba(255,255,255,${clamp(0.90 * strength)})`);
@@ -681,7 +698,7 @@ function drawGlow(oc, S) {
   oc.fillRect(0, 0, S, S);
   // Layer 2: extra brightness punch in the core
   const r2 = S * 0.32;
-  const g2 = oc.createRadialGradient(S, S, 0, S, S, r2);
+  const g2 = oc.createRadialGradient(cx, cy, 0, cx, cy, r2);
   g2.addColorStop(0,    `rgba(255,255,255,${clamp(0.75 * strength)})`);
   g2.addColorStop(0.45, `rgba(255,255,255,${clamp(0.35 * strength)})`);
   g2.addColorStop(1,    'rgba(255,255,255,0)');

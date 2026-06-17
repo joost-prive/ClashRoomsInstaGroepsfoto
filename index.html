@@ -651,8 +651,8 @@ function drawArcs(oc, S) {
   const arcScale = arcH / ARC_VB_H;              // scale factor for SVG paths
   const arcW = ARC_VB_W * arcScale;              // arc rendered width
   const offscreen = S * ARC_OFFSCREEN_FACTOR;    // pixels that go off-screen
-  // Stroke van 2 canvas-pixels → in path-space delen door arcScale
-  const strokeW = 2 / arcScale;
+  // Stroke van 1 canvas-pixel → in path-space delen door arcScale
+  const strokeW = 1 / arcScale;
 
   // Red arc — LEFT side
   // The path tip points RIGHT, so place the left edge off-screen
